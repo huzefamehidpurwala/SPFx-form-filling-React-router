@@ -2,38 +2,17 @@ import * as React from "react";
 import styles from "./WorkflowBillApproval.module.scss";
 import type { IWorkflowBillApprovalProps } from "./IWorkflowBillApprovalProps";
 // import { escape } from "@microsoft/sp-lodash-subset";
-import { HashRouter, Routes, Route, useNavigate } from "react-router-dom";
+import { HashRouter, Routes, Route, Navigate } from "react-router-dom";
 import { ContextStore } from "./Context/ContextStore";
-
-function App() {
-  const navigate = useNavigate();
-  return (
-    <div>
-      <p>i am in app comp</p>
-      {/* <a href="#/about">about</a> */}
-      <button type="button" onClick={() => navigate("/about")}>
-        about
-      </button>
-    </div>
-  );
-}
-
-function About() {
-  const { description } = React.useContext(ContextStore);
-  return (
-    <div>
-      <a href="#/">home</a>
-      <p>i am in about comp {description}</p>
-    </div>
-  );
-}
+import InitiaterForm from "./Forms/InitiaterForm";
+import GMForm from "./Forms/GMForm";
 
 export default class WorkflowBillApproval extends React.Component<IWorkflowBillApprovalProps> {
   public render(): React.ReactElement<IWorkflowBillApprovalProps> {
-    const { hasTeamsContext, description } = this.props;
+    const { hasTeamsContext, context } = this.props;
 
     return (
-      <ContextStore.Provider value={{ description }}>
+      <ContextStore.Provider value={{ context }}>
         <section
           className={`${styles.workflowBillApproval} ${
             hasTeamsContext ? styles.teams : ""
@@ -41,8 +20,11 @@ export default class WorkflowBillApproval extends React.Component<IWorkflowBillA
         >
           <HashRouter>
             <Routes>
-              <Route path="/" element={<App />} />
-              <Route path="/about" element={<About />} />
+              <Route path="/initiaterForm" element={<InitiaterForm />} />
+              <Route path="/gmForm/:formId" element={<GMForm />} />
+              <Route path="/err404" element={<p>404 | Page Not Found</p>} />
+              <Route path="/err500" element={<p>500 | Internal Server Error</p>} />
+              <Route path="*" element={<Navigate to={"/initiaterForm"} />} />
             </Routes>
           </HashRouter>
         </section>

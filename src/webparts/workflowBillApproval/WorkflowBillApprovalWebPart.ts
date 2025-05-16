@@ -11,6 +11,7 @@ import { IReadonlyTheme } from "@microsoft/sp-component-base";
 import * as strings from "WorkflowBillApprovalWebPartStrings";
 import WorkflowBillApproval from "./components/WorkflowBillApproval";
 import { IWorkflowBillApprovalProps } from "./components/IWorkflowBillApprovalProps";
+import { sp } from "@pnp/sp";
 
 export interface IWorkflowBillApprovalWebPartProps {
   description: string;
@@ -23,7 +24,7 @@ export default class WorkflowBillApprovalWebPart extends BaseClientSideWebPart<I
   public render(): void {
     const element: React.ReactElement<IWorkflowBillApprovalProps> =
       React.createElement(WorkflowBillApproval, {
-        description: this.properties.description,
+        context: this.context,
         isDarkTheme: this._isDarkTheme,
         environmentMessage: this._environmentMessage,
         hasTeamsContext: !!this.context.sdks.microsoftTeams,
@@ -33,7 +34,11 @@ export default class WorkflowBillApprovalWebPart extends BaseClientSideWebPart<I
     ReactDom.render(element, this.domElement);
   }
 
-  protected onInit(): Promise<void> {
+  protected async onInit(): Promise<void> {
+    await super.onInit();
+    sp.setup({
+      spfxContext: this.context, // Wire up SPFx authentication
+    });
     return this._getEnvironmentMessage().then((message) => {
       this._environmentMessage = message;
     });
