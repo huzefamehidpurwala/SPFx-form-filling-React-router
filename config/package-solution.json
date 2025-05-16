@@ -1,0 +1,40 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/spfx-build/package-solution.schema.json",
+  "solution": {
+    "name": "workflow-bill-approval-client-side-solution",
+    "id": "5aa184fb-90fa-4c4f-8b1a-226e93989839",
+    "version": "1.0.0.0",
+    "includeClientSideAssets": true,
+    "skipFeatureDeployment": true,
+    "isDomainIsolated": false,
+    "developer": {
+      "name": "",
+      "websiteUrl": "",
+      "privacyUrl": "",
+      "termsOfUseUrl": "",
+      "mpnId": "Undefined-1.20.0"
+    },
+    "metadata": {
+      "shortDescription": {
+        "default": "workflow-bill-approval description"
+      },
+      "longDescription": {
+        "default": "workflow-bill-approval description"
+      },
+      "screenshotPaths": [],
+      "videoUrl": "",
+      "categories": []
+    },
+    "features": [
+      {
+        "title": "workflow-bill-approval Feature",
+        "description": "The feature that activates elements of the workflow-bill-approval solution.",
+        "id": "87a8bce8-3cae-4041-ac6e-c17a2cd3d5ca",
+        "version": "1.0.0.0"
+      }
+    ]
+  },
+  "paths": {
+    "zippedPackage": "solution/workflow-bill-approval.sppkg"
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/spfx-build/config.2.0.schema.json",
+  "version": "2.0",
+  "bundles": {
+    "workflow-bill-approval-web-part": {
+      "components": [
+        {
+          "entrypoint": "./lib/webparts/workflowBillApproval/WorkflowBillApprovalWebPart.js",
+          "manifest": "./src/webparts/workflowBillApproval/WorkflowBillApprovalWebPart.manifest.json"
+        }
+      ]
+    }
+  },
+  "externals": {},
+  "localizedResources": {
+    "WorkflowBillApprovalWebPartStrings": "lib/webparts/workflowBillApproval/loc/{locale}.js",
+    "PropertyControlStrings": "node_modules/@pnp/spfx-property-controls/lib/loc/{locale}.js",
+    "ControlStrings": "node_modules/@pnp/spfx-controls-react/lib/loc/{locale}.js"
+  }
+}

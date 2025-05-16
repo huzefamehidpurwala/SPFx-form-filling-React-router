@@ -1,0 +1,24 @@
+{
+  "@microsoft/generator-sharepoint": {
+    "whichFolder": "subdir",
+    "solutionName": "workflow-bill-approval",
+    "componentType": "webpart",
+    "template": "react",
+    "componentName": "workflow-bill-approval",
+    "plusBeta": false,
+    "isCreatingSolution": true,
+    "nodeVersion": "18.19.0",
+    "sdksVersions": {
+      "@microsoft/microsoft-graph-client": "3.0.2",
+      "@microsoft/teams-js": "2.24.0"
+    },
+    "version": "1.20.0",
+    "libraryName": "workflow-bill-approval",
+    "libraryId": "5aa184fb-90fa-4c4f-8b1a-226e93989839",
+    "environment": "spo",
+    "packageManager": "npm",
+    "solutionShortDescription": "workflow-bill-approval description",
+    "skipFeatureDeployment": true,
+    "isDomainIsolated": false
+  }
+}
