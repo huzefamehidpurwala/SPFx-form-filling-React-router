@@ -3,6 +3,7 @@ import styles from "./WorkflowBillApproval.module.scss";
 import type { IWorkflowBillApprovalProps } from "./IWorkflowBillApprovalProps";
 // import { escape } from "@microsoft/sp-lodash-subset";
 import { HashRouter, Routes, Route, useNavigate } from "react-router-dom";
+import { ContextStore } from "./Context/ContextStore";
 
 function App() {
   const navigate = useNavigate();
@@ -18,31 +19,34 @@ function App() {
 }
 
 function About() {
+  const { description } = React.useContext(ContextStore);
   return (
     <div>
       <a href="#/">home</a>
-      <p>i am in about comp</p>
+      <p>i am in about comp {description}</p>
     </div>
   );
 }
 
 export default class WorkflowBillApproval extends React.Component<IWorkflowBillApprovalProps> {
   public render(): React.ReactElement<IWorkflowBillApprovalProps> {
-    const { hasTeamsContext } = this.props;
+    const { hasTeamsContext, description } = this.props;
 
     return (
-      <section
-        className={`${styles.workflowBillApproval} ${
-          hasTeamsContext ? styles.teams : ""
-        }`}
-      >
-        <HashRouter>
-          <Routes>
-            <Route path="/" element={<App />} />
-            <Route path="/about" element={<About />} />
-          </Routes>
-        </HashRouter>
-      </section>
+      <ContextStore.Provider value={{ description }}>
+        <section
+          className={`${styles.workflowBillApproval} ${
+            hasTeamsContext ? styles.teams : ""
+          }`}
+        >
+          <HashRouter>
+            <Routes>
+              <Route path="/" element={<App />} />
+              <Route path="/about" element={<About />} />
+            </Routes>
+          </HashRouter>
+        </section>
+      </ContextStore.Provider>
     );
   }
 }
