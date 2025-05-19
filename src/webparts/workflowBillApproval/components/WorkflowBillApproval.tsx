@@ -103,7 +103,7 @@ export default class WorkflowBillApproval extends React.Component<IWorkflowBillA
     const { hasTeamsContext, context } = this.props;
 
     return (
-      <ContextStore.Provider value={{ context }}>
+      <ContextStore.Provider value={{ spContext: context }}>
         <section
           className={`${styles.workflowBillApproval} ${
             hasTeamsContext ? styles.teams : ""
@@ -113,12 +113,12 @@ export default class WorkflowBillApproval extends React.Component<IWorkflowBillA
             <HashRouter>
               <Routes>
                 <Route
-                  path="/initiaterForm/:formId?"
+                  path="/form/:formId?"
                   element={<InitiaterForm />}
                 />
                 {/* <Route path="/gmForm/:formId" element={<GMForm />} /> */}
                 <Route path="/err/:code?" element={<ErrorPage />} />
-                <Route path="*" element={<Navigate to={"/initiaterForm"} />} />
+                <Route path="*" element={<Navigate to={"/form"} />} />
               </Routes>
             </HashRouter>
           </ErrorBoundary>

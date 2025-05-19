@@ -95,7 +95,7 @@ const GMForm: React.FC = () => {
         </>
       )}
       <div className={styles.links}>
-        <a href="#/initiaterForm">initiaterForm</a>
+        <a href="#/form">initiaterForm</a>
       </div>
       <Stack horizontal tokens={{ childrenGap: 8 }} style={{ float: "right" }}>
         <DefaultButton text="Reject" onClick={() => {}} />
