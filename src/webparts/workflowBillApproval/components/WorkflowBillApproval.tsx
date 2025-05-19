@@ -36,11 +36,11 @@ class ErrorBoundary extends React.Component<
   }
 
   // You can log error details here or send to an external service
-  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo): void {
     console.error("Caught by ErrorBoundary:", error, errorInfo);
   }
 
-  render() {
+  render(): React.ReactNode {
     if (this.state.hasError) {
       // Redirect to /err500 on any rendering error
       return <Navigate to="/err500" replace />;
@@ -51,7 +51,7 @@ class ErrorBoundary extends React.Component<
 }
 
 // Reusable ErrorPage component
-function ErrorPage() {
+const ErrorPage: React.FC = () => {
   const { code } = useParams();
   let title, message;
 
@@ -96,7 +96,7 @@ function ErrorPage() {
       </div>
     </div>
   );
-}
+};
 
 export default class WorkflowBillApproval extends React.Component<IWorkflowBillApprovalProps> {
   public render(): React.ReactElement<IWorkflowBillApprovalProps> {
