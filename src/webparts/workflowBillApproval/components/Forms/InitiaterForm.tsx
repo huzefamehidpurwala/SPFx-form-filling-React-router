@@ -66,9 +66,6 @@ const InitiaterForm: React.FC = () => {
 
     // Fetch the form data
     (async () => {
-      // const siteId = "cdfec0f5-6017-47aa-b95e-bdd953db733f"; // workflow-bill-approval
-      const listId = "86892207-d198-453b-9b56-01044bc52533"; // Form Entry
-
       try {
         setLoading(true);
         await (async () => {
@@ -208,7 +205,6 @@ const InitiaterForm: React.FC = () => {
           .getById(listId)
           .items.getById(Number(formId))
           .update({
-            redirectURL: "", // context.pageContext.web.absoluteUrl + context.pageContext.web.serverRelativeUrl + "#/initiater/",
             currStep: 0,
             reasonOfRejection: rejectReason,
             rejectedBy:
@@ -244,6 +240,112 @@ const InitiaterForm: React.FC = () => {
     { key: "pl003", text: "PL003" },
   ];
 
+  const extras = (() => {
+    switch (currStep) {
+      case 2:
+        return (
+          <ul>
+            <li>
+              <input type="checkbox" id="matCodeExists" name="matCodeExists" />
+              <label htmlFor="matCodeExists">
+                All Material Code are existing in requested Plant code
+              </label>
+            </li>
+            <li>
+              <input
+                type="checkbox"
+                id="altMaterialDef"
+                name="altMaterialDef"
+              />
+              <label htmlFor="altMaterialDef">
+                Alternate Material is properly define in Bill of Material
+              </label>
+            </li>
+            <li>
+              <input
+                type="checkbox"
+                id="storageLocationDef"
+                name="storageLocationDef"
+              />
+              <label htmlFor="storageLocationDef">
+                Storage Location properly define in Bill of Material
+              </label>
+            </li>
+            <li>
+              <input
+                type="checkbox"
+                id="workCenterRouting"
+                name="workCenterRouting"
+              />
+              <label htmlFor="workCenterRouting">
+                Work Center in Routing check Validation and found OK
+              </label>
+            </li>
+            <li>
+              <input
+                type="checkbox"
+                id="workCenterCostCenter"
+                name="workCenterCostCenter"
+              />
+              <label htmlFor="workCenterCostCenter">
+                Work Centre Cost Center check for Validation and found OK
+              </label>
+            </li>
+            <li>
+              <input
+                type="checkbox"
+                id="otherParamsChecked"
+                name="otherParamsChecked"
+              />
+              <label htmlFor="otherParamsChecked">
+                All Other Parameters in Bill of Material Checked
+              </label>
+            </li>
+          </ul>
+        );
+      case 3:
+        return (
+          <ul>
+            <li>
+              <input
+                type="checkbox"
+                id="qcActiveMaintained"
+                name="qcActiveMaintained"
+              />
+              <label htmlFor="qcActiveMaintained">
+                Quality Check is / active &amp; maintained for All the Material
+                in Bill of Material
+              </label>
+            </li>
+            <li>
+              <input
+                type="checkbox"
+                id="qcParamsMaintained"
+                name="qcParamsMaintained"
+              />
+              <label htmlFor="qcParamsMaintained">
+                QC Parameters are properly maintained in System Material master
+                Tab for All Material in BOM
+              </label>
+            </li>
+            <li>
+              <input
+                type="checkbox"
+                id="bomComponentQtyChecked"
+                name="bomComponentQtyChecked"
+              />
+              <label htmlFor="bomComponentQtyChecked">
+                All BOM Component Quantity is check and Found O.K.
+              </label>
+            </li>
+          </ul>
+        );
+      case 1:
+      case 0:
+      default:
+        return null;
+    }
+  })();
   const statusMsg = (() => {
     switch (currStep) {
       case 1:
@@ -386,6 +488,8 @@ const InitiaterForm: React.FC = () => {
                   </ol>
                 </div>
               ) : null}
+
+              {extras}
 
               <Stack
                 horizontal
