@@ -1,9 +1,17 @@
 import * as React from "react";
-import { IStackTokens, PrimaryButton, Stack, TextField } from "@fluentui/react";
+import {
+  ComboBox,
+  DefaultButton,
+  IComboBoxOption,
+  IStackTokens,
+  PrimaryButton,
+  Stack,
+  TextField,
+} from "@fluentui/react";
 import { sp } from "@pnp/sp";
 import { ContextStore } from "../Context/ContextStore";
-import styles from "../WorkflowBillApproval.module.scss";
-import { useNavigate } from "react-router-dom";
+// import styles from "../WorkflowBillApproval.module.scss";
+import { useNavigate, useParams } from "react-router-dom";
 
 export type IFormDetails = {
   location: string;
@@ -18,6 +26,7 @@ export const stackTokens: IStackTokens = { childrenGap: 40 };
 const InitiaterForm: React.FC = () => {
   const { context } = React.useContext(ContextStore);
 
+  const { formId } = useParams();
   const navigate = useNavigate();
 
   const [formDetails, setFormDetails] = React.useState<IFormDetails>({
@@ -27,7 +36,52 @@ const InitiaterForm: React.FC = () => {
     materialCodes: "",
     remarks: "",
   });
+  const [comBoxSelectedKey, setComBoxSelectedKey] = React.useState({
+    location: "",
+    plantCode: "",
+  });
   const [loading, setLoading] = React.useState(false);
+
+  React.useEffect(() => {
+    if (!formId) {
+      // navigate("/err/404");
+      return;
+    }
+
+    // Fetch the form data
+    (async () => {
+      // const siteId = "cdfec0f5-6017-47aa-b95e-bdd953db733f"; // workflow-bill-approval
+      const listId = "86892207-d198-453b-9b56-01044bc52533"; // Form Entry
+
+      try {
+        setLoading(true);
+        await (async () => {
+          // Create a new list item :contentReference[oaicite:10]{index=10}
+          const result = await sp.web.lists
+            .getById(listId)
+            .items.getById(Number(formId))
+            .get();
+          //   console.log("Created item:", result);
+          setFormDetails(result);
+          setComBoxSelectedKey({
+            location: result.location.toLowerCase(),
+            plantCode: result.plantCode.toLowerCase(),
+          });
+        })().catch((error) => {
+          console.error("catch haha Error creating item:", error);
+          navigate("/err/500");
+        });
+      } catch (error) {
+        console.error("Error creating item:", error);
+        navigate("/err/500");
+      } finally {
+        setLoading(false);
+      }
+    })().catch((error) => {
+      console.error("catch external creating item:", error);
+      navigate("/err/500");
+    });
+  }, [formId]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
     const { name, value } = e.target;
@@ -44,9 +98,9 @@ const InitiaterForm: React.FC = () => {
     // const siteId = "cdfec0f5-6017-47aa-b95e-bdd953db733f"; // workflow-bill-approval
     const listId = "86892207-d198-453b-9b56-01044bc52533"; // Form Entry
 
-    try {
-      setLoading(true);
-      (async () => {
+    (async () => {
+      try {
+        setLoading(true);
         // Create a new list item :contentReference[oaicite:10]{index=10}
         const result = await sp.web.lists.getById(listId).items.add({
           location: formDetails.location, //"Mumbai Office",
@@ -56,10 +110,11 @@ const InitiaterForm: React.FC = () => {
           redirectURL:
             context.pageContext.web.absoluteUrl +
             context.pageContext.web.serverRelativeUrl +
-            "#/",
+            "#/initiater/",
           currStep: 1,
         });
         console.log("Created item:", result);
+        setComBoxSelectedKey({ location: "", plantCode: "" });
         setFormDetails({
           location: "",
           plantCode: "",
@@ -67,17 +122,29 @@ const InitiaterForm: React.FC = () => {
           materialCodes: "",
           remarks: "",
         });
-      })().catch((error) => {
-        console.error("catch haha Error creating item:", error);
-        navigate("/err500");
-      });
-    } catch (error) {
-      console.error("Error creating item:", error);
-    } finally {
-      setLoading(false);
-    }
+      } catch (error) {
+        console.error("Error creating item:", error);
+      } finally {
+        setLoading(false);
+      }
+    })().catch((error) => {
+      console.error("catch haha Error creating item:", error);
+      navigate("/err/500");
+    });
   };
 
+  const options: IComboBoxOption[] = [
+    { key: "umargam", text: "Umargam" },
+    { key: "tumb", text: "Tumb" },
+    { key: "silvassa", text: "Silvassa" },
+  ];
+  const optionsPl: IComboBoxOption[] = [
+    { key: "pl001", text: "PL001" },
+    { key: "pl002", text: "PL002" },
+    { key: "pl003", text: "PL003" },
+  ];
+
+  const disableInputs = formId !== undefined;
   const disableSubmit =
     formDetails.location === "" ||
     formDetails.plantCode === "" ||
@@ -86,29 +153,61 @@ const InitiaterForm: React.FC = () => {
     loading;
   return (
     <div style={{ margin: "auto", maxWidth: "600px" }}>
-      <form action="" onSubmit={handleSubmit}>
-        <Stack horizontal tokens={stackTokens} horizontalAlign="stretch">
-          <TextField
-            value={formDetails.location}
-            onChange={handleChange}
-            label="Location"
-            name="location"
-          />
-          <TextField
-            value={formDetails.plantCode}
-            onChange={handleChange}
-            label="Plant Code & Name"
-            name="plantCode"
-          />
-          <TextField
-            value={formDetails.startDate}
-            onChange={handleChange}
-            label="Start Date"
-            name="startDate"
-          />
-        </Stack>
-        <>
-          {/* <TextField
+      {loading ? (
+        <p>Working...</p>
+      ) : (
+        <form action="" onSubmit={handleSubmit}>
+          <Stack horizontal tokens={stackTokens} horizontalAlign="stretch">
+            <ComboBox
+              // defaultSelectedKey="C"
+              disabled={disableInputs}
+              selectedKey={comBoxSelectedKey.location}
+              onChange={(e, opt) => {
+                const name = "location";
+                const value = opt?.text || "";
+                setComBoxSelectedKey((p) => ({
+                  ...p,
+                  location: String(opt?.key) || "",
+                }));
+                setFormDetails((prevDetails) => ({
+                  ...prevDetails,
+                  [name]: value,
+                }));
+              }}
+              label="Location"
+              options={options}
+              // styles={comboBoxStyles}
+            />
+            <ComboBox
+              // defaultSelectedKey="C"
+              disabled={disableInputs}
+              selectedKey={comBoxSelectedKey.plantCode}
+              onChange={(e, opt) => {
+                const name = "plantCode";
+                const value = opt?.text || "";
+                setComBoxSelectedKey((p) => ({
+                  ...p,
+                  plantCode: String(opt?.key) || "",
+                }));
+                setFormDetails((prevDetails) => ({
+                  ...prevDetails,
+                  [name]: value,
+                }));
+              }}
+              label="Plant Code & Name"
+              options={optionsPl}
+              // styles={comboBoxStyles}
+            />
+            <TextField
+              disabled={disableInputs}
+              value={formDetails.startDate}
+              onChange={handleChange}
+              label="Start Date"
+              name="startDate"
+            />
+          </Stack>
+          <>
+            {/* <TextField
               value={formDetails.materialCodes}
               onChange={handleChange}
               label="Material Codes (Max: 12)"
@@ -117,25 +216,37 @@ const InitiaterForm: React.FC = () => {
               rows={12}
               resizable={false}
             /> */}
-        </>
-        <TextField
-          value={formDetails.remarks}
-          onChange={handleChange}
-          label="Remarks"
-          multiline
-          /* rows={12} */ name="remarks"
-        />
+          </>
+          <TextField
+            disabled={disableInputs}
+            value={formDetails.remarks}
+            onChange={handleChange}
+            label="Remarks"
+            multiline
+            /* rows={12} */ name="remarks"
+          />
 
-        <div className={styles.links}>
-          <a href="#/gmForm/3">gmForm</a>
-        </div>
-        <PrimaryButton
-          text={loading ? "Submitting..." : "Submit"}
-          disabled={disableSubmit}
-          type="submit"
-          style={{ marginTop: "12px", float: "right" }}
-        />
-      </form>
+          {disableInputs ? (
+            <>
+              <Stack
+                horizontal
+                tokens={{ childrenGap: 8 }}
+                style={{ marginTop: "12px", float: "right" }}
+              >
+                <DefaultButton text="Reject" onClick={() => {}} />
+                <PrimaryButton text="Approve" onClick={() => {}} />
+              </Stack>
+            </>
+          ) : (
+            <PrimaryButton
+              text={loading ? "Submitting..." : "Submit"}
+              disabled={disableSubmit}
+              type="submit"
+              style={{ marginTop: "12px", float: "right" }}
+            />
+          )}
+        </form>
+      )}
     </div>
   );
 };
