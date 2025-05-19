@@ -95,8 +95,12 @@ const InitiaterForm: React.FC = () => {
     e.preventDefault();
 
     // Add a row data in the list
-    // const siteId = "cdfec0f5-6017-47aa-b95e-bdd953db733f"; // workflow-bill-approval
-    const listId = "86892207-d198-453b-9b56-01044bc52533"; // Form Entry
+    const absoluteUrl = context.pageContext.web.absoluteUrl;
+    const pageRelativePath = context.pageContext.site.serverRequestPath.replace(
+      context.pageContext.site.serverRelativeUrl,
+      ""
+    );
+    const hashRoute = "#/initiaterForm/";
 
     (async () => {
       try {
@@ -107,10 +111,7 @@ const InitiaterForm: React.FC = () => {
           plantCode: formDetails.plantCode, //"PLNT-001",
           startDate: formDetails.startDate, //"2025-06-01",
           remarks: formDetails.remarks, //"Initial entry via PnP Graph",
-          redirectURL:
-            context.pageContext.web.absoluteUrl +
-            context.pageContext.web.serverRelativeUrl +
-            "#/initiater/",
+          redirectURL: absoluteUrl + pageRelativePath + hashRoute,
           currStep: 1,
         });
         console.log("Created item:", result);
