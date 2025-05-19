@@ -55,10 +55,34 @@ const InitiaterForm: React.FC = () => {
   const [rejectReason, setRejectReason] = React.useState("");
   const [hideDialog, setHideDialog] = React.useState(true);
   const [currStep, setCurrStep] = React.useState(0);
+  const [usrGroups, setUsrGroups] = React.useState<{ Title: string }[]>([]);
 
   const toggleHideDialog = (): void => setHideDialog((p) => !p);
 
   React.useEffect(() => {
+    (async () => {
+      try {
+        setLoading(true);
+        await (async () => {
+          // Get all groups for the current user
+          const userGroups: Array<{ Title: string }> =
+            await sp.web.currentUser.groups.select("Title").get();
+          setUsrGroups(userGroups);
+        })().catch((error) => {
+          console.error("catch haha Error creating item:", error);
+          navigate("/err/500", { replace: true });
+        });
+      } catch (error) {
+        console.error("Error creating item:", error);
+        navigate("/err/500", { replace: true });
+      } finally {
+        setLoading(false);
+      }
+    })().catch((error) => {
+      console.error("catch external creating item:", error);
+      navigate("/err/500", { replace: true });
+    });
+
     if (!formId) {
       // navigate("/err/404");
       return;
@@ -96,6 +120,43 @@ const InitiaterForm: React.FC = () => {
       navigate("/err/500", { replace: true });
     });
   }, [formId]);
+
+  React.useEffect(() => {
+    if (formId && usrGroups.length > 0) {
+      let isAuthorized = false;
+      switch (currStep) {
+        case 1:
+          isAuthorized = usrGroups.some((group) =>
+            group.Title.toLowerCase().includes("gm user")
+          );
+          break;
+
+        case 2:
+          isAuthorized = usrGroups.some((group) =>
+            group.Title.toLowerCase().includes("pp dept")
+          );
+          break;
+
+        case 3:
+          isAuthorized = usrGroups.some((group) =>
+            group.Title.toLowerCase().includes("qc dept")
+          );
+          break;
+
+        case 0: {
+          isAuthorized = true; // Allow all users to create a new form
+          break;
+        }
+
+        default:
+          break;
+      }
+
+      if (!isAuthorized) {
+        navigate("/err/401", { replace: true });
+      }
+    }
+  }, [usrGroups.length, currStep, formId]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
     const { name, value } = e.target;
