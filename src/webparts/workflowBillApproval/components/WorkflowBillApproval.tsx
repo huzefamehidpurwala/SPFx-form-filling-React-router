@@ -10,7 +10,7 @@ import {
   useParams,
 } from "react-router-dom";
 import { ContextStore } from "./Context/ContextStore";
-import InitiaterForm from "./Forms/InitiaterForm";
+import Form from "./Forms/Form";
 
 // Define props and state interfaces for the ErrorBoundary
 interface ErrorBoundaryProps {
@@ -114,7 +114,7 @@ export default class WorkflowBillApproval extends React.Component<IWorkflowBillA
               <Routes>
                 <Route
                   path="/form/:formId?"
-                  element={<InitiaterForm />}
+                  element={<Form />}
                 />
                 {/* <Route path="/gmForm/:formId" element={<GMForm />} /> */}
                 <Route path="/err/:code?" element={<ErrorPage />} />

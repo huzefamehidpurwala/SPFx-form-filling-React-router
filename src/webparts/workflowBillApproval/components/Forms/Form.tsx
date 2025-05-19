@@ -34,7 +34,7 @@ const dialogContentProps = {
   title: "Confirm Rejection",
 };
 
-const InitiaterForm: React.FC = () => {
+const Form: React.FC = () => {
   const { spContext: context } = React.useContext(ContextStore);
 
   const { formId } = useParams();
@@ -591,4 +591,4 @@ const InitiaterForm: React.FC = () => {
   );
 };
 
-export default InitiaterForm;
+export default Form;
