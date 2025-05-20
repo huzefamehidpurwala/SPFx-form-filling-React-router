@@ -122,29 +122,46 @@ const Form: React.FC = () => {
   }, [formId]);
 
   React.useEffect(() => {
-    if (formId && usrGroups.length > 0) {
+    // * Need to remove this currStep check as if in update mode,
+    // * after rejection this would be allowed to anyone.
+    if (formId && usrGroups.length > 0 && currStep > 0) {
       let isAuthorized = false;
       switch (currStep) {
+        // case 1:
+        // isAuthorized = usrGroups.some((group) => group.Title.toLowerCase().includes("gm user"));
+        // isAuthorized = (
+        //   context.pageContext.user.email.toLowerCase() ||
+        //   context.pageContext.user.loginName.toLowerCase()
+        // ).includes("sigar@ygr11");
+        // break;
+
+        // case 2:
+        // isAuthorized = usrGroups.some((group) => group.Title.toLowerCase().includes("pp dept"));
+        // isAuthorized = (
+        //   context.pageContext.user.email.toLowerCase() ||
+        //   context.pageContext.user.loginName.toLowerCase()
+        // ).includes("sigar@ygr11");
+        // break;
+
         case 1:
-          isAuthorized = usrGroups.some((group) =>
-            group.Title.toLowerCase().includes("gm user")
-          );
-          break;
-
         case 2:
-          isAuthorized = usrGroups.some((group) =>
-            group.Title.toLowerCase().includes("pp dept")
-          );
-          break;
-
         case 3:
-          isAuthorized = usrGroups.some((group) =>
-            group.Title.toLowerCase().includes("qc dept")
-          );
+          // isAuthorized = usrGroups.some((group) => group.Title.toLowerCase().includes("qc dept"));
+          isAuthorized = (
+            context.pageContext.user.email.toLowerCase() ||
+            context.pageContext.user.loginName.toLowerCase()
+          ).includes("sigar@ygr11");
           break;
 
         case 0: {
-          isAuthorized = true; // Allow all users to create a new form
+          // if (!formId) {
+          //   isAuthorized = true; // Allow all users to create a new form
+          // } else {
+          isAuthorized = (
+            context.pageContext.user.email.toLowerCase() ||
+            context.pageContext.user.loginName.toLowerCase()
+          ).includes("huzefa.m@ygr11");
+          // }
           break;
         }
 
