@@ -68,7 +68,7 @@ const Form: React.FC = () => {
   const [loading, setLoading] = React.useState(false);
   const [rejectReason, setRejectReason] = React.useState("");
   const [hideDialog, setHideDialog] = React.useState(true);
-  const [currStep, setCurrStep] = React.useState(formId !== undefined ? 0 : -1);
+  const [currStep, setCurrStep] = React.useState<number>(-2); // formId !== undefined ? 0 : -1
   // const [usrGroups, setUsrGroups] = React.useState<{ Title: string }[]>([]);
   const [comments, setComments] = React.useState<Record<number, boolean>>({});
 
@@ -100,6 +100,7 @@ const Form: React.FC = () => {
 
     if (!formId) {
       // navigate("/err/404");
+      setCurrStep(-1);
       return;
     }
 
