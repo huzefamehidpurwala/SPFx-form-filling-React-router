@@ -34,6 +34,20 @@ const dialogContentProps = {
   title: "Confirm Rejection",
 };
 
+const ppComments = [
+  "All Material Code are existing in requested Plant code",
+  "Alternate Material is properly define in Bill of Material",
+  "Storage Location properly define in Bill of Material",
+  "Work Center in Routing check Validation and found OK",
+  "Work Centre Cost Center check for Validation and found OK",
+  "All Other Parameters in Bill of Material Checked",
+];
+const qcComments = [
+  "Quality Check is / active & maintained for All the Material in Bill of Material",
+  "QC Parameters are properly maintained in System Material master Tab for All Material in BOM",
+  "All BOM Component Quantity is check and Found O.K",
+];
+
 const Form: React.FC = () => {
   const { spContext: context } = React.useContext(ContextStore);
 
@@ -55,13 +69,14 @@ const Form: React.FC = () => {
   const [rejectReason, setRejectReason] = React.useState("");
   const [hideDialog, setHideDialog] = React.useState(true);
   const [currStep, setCurrStep] = React.useState(formId !== undefined ? 0 : -1);
-  const [usrGroups, setUsrGroups] = React.useState<{ Title: string }[]>([]);
+  // const [usrGroups, setUsrGroups] = React.useState<{ Title: string }[]>([]);
   const [isRejectedSuccess, setIsRejectedSuccess] = React.useState(false);
+  const [comments, setComments] = React.useState<Record<number, boolean>>({});
 
   const toggleHideDialog = (): void => setHideDialog((p) => !p);
 
   React.useEffect(() => {
-    (async () => {
+    /* (async () => {
       try {
         setLoading(true);
         await (async () => {
@@ -82,7 +97,7 @@ const Form: React.FC = () => {
     })().catch((error) => {
       console.error("catch external creating item:", error);
       navigate("/err/500", { replace: true });
-    });
+    }); */
 
     if (!formId) {
       // navigate("/err/404");
@@ -125,7 +140,7 @@ const Form: React.FC = () => {
   React.useEffect(() => {
     // * Need to remove this currStep check as if in update mode,
     // * after rejection this would be allowed to anyone.
-    if (formId && usrGroups.length > 0 && currStep > 0) {
+    if (formId /* && usrGroups.length > 0 */ && currStep > 0) {
       let isAuthorized = false;
       switch (currStep) {
         // case 1:
@@ -170,7 +185,7 @@ const Form: React.FC = () => {
         navigate("/err/401", { replace: true });
       }
     }
-  }, [usrGroups.length, currStep, formId]);
+  }, [/* usrGroups.length, */ currStep, formId]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
     const { name, value } = e.target;
@@ -248,13 +263,22 @@ const Form: React.FC = () => {
   const handleApprove = (e: React.MouseEvent<HTMLButtonElement>): void => {
     // Update the row data in the list
     (async () => {
+      const isCommentsEmpty = Object.keys(comments).every(
+        (key) => !comments[Number(key)]
+      );
+      const sendComments = !isCommentsEmpty
+        ? ppComments.filter((_, i) => comments[i]).join("\n")
+        : "Approved by " + context.pageContext.user.displayName;
       try {
         setLoading(true);
         // Create a new list item :contentReference[oaicite:10]{index=10}
         /* const result =  */ await sp.web.lists
           .getById(listId)
           .items.getById(Number(formId))
-          .update({ currStep: currStep + 1 });
+          .update({
+            currStep: currStep + 1,
+            comments: sendComments,
+          });
         // console.log("Created item:", result);
         navigate("/succ/app", { replace: true });
       } catch (error) {
@@ -322,102 +346,48 @@ const Form: React.FC = () => {
     switch (currStep) {
       case 2:
         return (
-          <ul>
-            <li>
-              <input type="checkbox" id="matCodeExists" name="matCodeExists" />
-              <label htmlFor="matCodeExists">
-                All Material Code are existing in requested Plant code
-              </label>
-            </li>
-            <li>
-              <input
-                type="checkbox"
-                id="altMaterialDef"
-                name="altMaterialDef"
-              />
-              <label htmlFor="altMaterialDef">
-                Alternate Material is properly define in Bill of Material
-              </label>
-            </li>
-            <li>
-              <input
-                type="checkbox"
-                id="storageLocationDef"
-                name="storageLocationDef"
-              />
-              <label htmlFor="storageLocationDef">
-                Storage Location properly define in Bill of Material
-              </label>
-            </li>
-            <li>
-              <input
-                type="checkbox"
-                id="workCenterRouting"
-                name="workCenterRouting"
-              />
-              <label htmlFor="workCenterRouting">
-                Work Center in Routing check Validation and found OK
-              </label>
-            </li>
-            <li>
-              <input
-                type="checkbox"
-                id="workCenterCostCenter"
-                name="workCenterCostCenter"
-              />
-              <label htmlFor="workCenterCostCenter">
-                Work Centre Cost Center check for Validation and found OK
-              </label>
-            </li>
-            <li>
-              <input
-                type="checkbox"
-                id="otherParamsChecked"
-                name="otherParamsChecked"
-              />
-              <label htmlFor="otherParamsChecked">
-                All Other Parameters in Bill of Material Checked
-              </label>
-            </li>
-          </ul>
+          <div>
+            {ppComments.map((st, i) => {
+              return (
+                <div key={i}>
+                  <input
+                    type="checkbox"
+                    checked={comments[i]}
+                    id={i.toString()}
+                    name={i.toString()}
+                    onChange={(e) =>
+                      setComments((p) => ({ ...p, [i]: e.target.checked }))
+                    }
+                  />
+                  <label htmlFor={i.toString()}>{st}</label>
+                </div>
+              );
+            })}
+          </div>
         );
+
       case 3:
         return (
-          <ul>
-            <li>
-              <input
-                type="checkbox"
-                id="qcActiveMaintained"
-                name="qcActiveMaintained"
-              />
-              <label htmlFor="qcActiveMaintained">
-                Quality Check is / active &amp; maintained for All the Material
-                in Bill of Material
-              </label>
-            </li>
-            <li>
-              <input
-                type="checkbox"
-                id="qcParamsMaintained"
-                name="qcParamsMaintained"
-              />
-              <label htmlFor="qcParamsMaintained">
-                QC Parameters are properly maintained in System Material master
-                Tab for All Material in BOM
-              </label>
-            </li>
-            <li>
-              <input
-                type="checkbox"
-                id="bomComponentQtyChecked"
-                name="bomComponentQtyChecked"
-              />
-              <label htmlFor="bomComponentQtyChecked">
-                All BOM Component Quantity is check and Found O.K.
-              </label>
-            </li>
-          </ul>
+          <div>
+            {qcComments.map((st, i) => {
+              return (
+                <div key={i}>
+                  <input
+                    type="checkbox"
+                    checked={comments[i]}
+                    id={i.toString()}
+                    name={i.toString()}
+                    onChange={(e) =>
+                      setComments((p) => ({ ...p, [i]: e.target.checked }))
+                    }
+                  />
+                  <label htmlFor={i.toString()}>{st}</label>
+                </div>
+              );
+            })}
+          </div>
         );
+
       case 1:
       case -1:
       case 0:
