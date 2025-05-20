@@ -137,9 +137,7 @@ const Form: React.FC = () => {
   }, [formId]);
 
   React.useEffect(() => {
-    // * Need to remove this currStep check as if in update mode,
-    // * after rejection this would be allowed to anyone.
-    if (formId /* && usrGroups.length > 0 */ && currStep > 0) {
+    if (formId /* && usrGroups.length > 0 */ && currStep > -1) {
       let isAuthorized = false;
       switch (currStep) {
         // case 1:
