@@ -206,7 +206,7 @@ const Form: React.FC = () => {
             rejectedBy: null,
             rejectedFromStep: null,
           });
-          navigate("/", { replace: true });
+          navigate("/succ/sub", { replace: true });
           return;
         }
         /* const result = */ await sp.web.lists
@@ -223,7 +223,7 @@ const Form: React.FC = () => {
             rejectedBy: null,
             rejectedFromStep: null,
           });
-        navigate("/", { replace: true });
+        navigate("/succ/upd", { replace: true });
         // console.log("Created item:", result);
         // setComBoxSelectedKey({ location: "", plantCode: "" });
         // setFormDetails({
@@ -255,7 +255,7 @@ const Form: React.FC = () => {
           .items.getById(Number(formId))
           .update({ currStep: currStep + 1 });
         // console.log("Created item:", result);
-        navigate("/");
+        navigate("/succ/app", { replace: true });
       } catch (error) {
         console.error("Error creating item:", error);
       } finally {

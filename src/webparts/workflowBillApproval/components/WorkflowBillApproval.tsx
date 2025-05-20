@@ -98,6 +98,19 @@ const ErrorPage: React.FC = () => {
   );
 };
 
+const SuccessPage: React.FC = () => {
+  const { status } = useParams();
+
+  return (
+    <div style={{ textAlign: "center" }}>
+      <p>{status !== "app" ? "Submitted" : "Approved"} successfully</p>
+      <div className={styles.links}>
+        <a href="#/">{"Go to Home"}</a>
+      </div>
+    </div>
+  );
+};
+
 export default class WorkflowBillApproval extends React.Component<IWorkflowBillApprovalProps> {
   public render(): React.ReactElement<IWorkflowBillApprovalProps> {
     const { hasTeamsContext, context } = this.props;
@@ -112,13 +125,11 @@ export default class WorkflowBillApproval extends React.Component<IWorkflowBillA
           <ErrorBoundary>
             <HashRouter>
               <Routes>
-                <Route
-                  path="/form/:formId?"
-                  element={<Form />}
-                />
+                <Route path="/form/:formId?" element={<Form />} />
                 {/* <Route path="/gmForm/:formId" element={<GMForm />} /> */}
                 <Route path="/err/:code?" element={<ErrorPage />} />
-                <Route path="*" element={<Navigate to={"/form"} />} />
+                <Route path="/succ/:status" element={<SuccessPage />} />
+                <Route path="*" element={<Navigate to={"/form"} replace />} />
               </Routes>
             </HashRouter>
           </ErrorBoundary>
