@@ -102,9 +102,15 @@ const ErrorPage: React.FC = () => {
 const SuccessPage: React.FC = () => {
   const { status } = useParams();
 
+  const statusMsg: Record<string, string> = {
+    app: "Approved",
+    rej: "Rejected",
+    upd: "Updated",
+  };
+
   return (
     <div style={{ textAlign: "center" }}>
-      <p>{status !== "app" ? "Submitted" : "Approved"} successfully</p>
+      <p>{statusMsg[status!] || "Done"} successfully</p>
       <div className={styles.links}>
         <Link to={"/"}>{"Go to Home"}</Link>
       </div>

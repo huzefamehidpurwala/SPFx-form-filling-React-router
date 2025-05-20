@@ -14,8 +14,8 @@ import {
 } from "@fluentui/react";
 import { sp } from "@pnp/sp";
 import { ContextStore } from "../Context/ContextStore";
-import styles from "../WorkflowBillApproval.module.scss";
-import { Link, useNavigate, useParams } from "react-router-dom";
+// import styles from "../WorkflowBillApproval.module.scss";
+import { useNavigate, useParams } from "react-router-dom";
 
 export type IFormDetails = {
   location: string;
@@ -70,7 +70,6 @@ const Form: React.FC = () => {
   const [hideDialog, setHideDialog] = React.useState(true);
   const [currStep, setCurrStep] = React.useState(formId !== undefined ? 0 : -1);
   // const [usrGroups, setUsrGroups] = React.useState<{ Title: string }[]>([]);
-  const [isRejectedSuccess, setIsRejectedSuccess] = React.useState(false);
   const [comments, setComments] = React.useState<Record<number, boolean>>({});
 
   const toggleHideDialog = (): void => setHideDialog((p) => !p);
@@ -314,16 +313,14 @@ const Form: React.FC = () => {
             rejectedFromStep: currStep,
           });
         // console.log("Created item:", result);
-        // navigate("/", { replace: true });
-        setIsRejectedSuccess(true);
         setRejectReason("");
+        navigate("/succ/rej", { replace: true });
       } catch (error) {
         console.error("Error creating item:", error);
-        setIsRejectedSuccess(false);
       } finally {
         setLoading(false);
         // setRejectReason("");
-        // setHideDialog(true);
+        setHideDialog(true);
       }
     })().catch((error) => {
       console.error("catch haha Error creating item:", error);
@@ -433,35 +430,24 @@ const Form: React.FC = () => {
         modalProps={{ isBlocking: true }}
       >
         <DialogContent>
-          {isRejectedSuccess ? (
-            <div style={{ textAlign: "center" }}>
-              <p>Rejected successfully</p>
-              <div className={styles.links}>
-                <Link to={"/"}>{"Go to Home"}</Link>
-              </div>
-            </div>
-          ) : (
-            <TextField
-              value={rejectReason}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                setRejectReason(e.target.value)
-              }
-              label="Reason of Rejection"
-              multiline
-              /* rows={12} */ name="reasonOfRejection"
-            />
-          )}
+          <TextField
+            value={rejectReason}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+              setRejectReason(e.target.value)
+            }
+            label="Reason of Rejection"
+            multiline
+            /* rows={12} */ name="reasonOfRejection"
+          />
         </DialogContent>
-        {isRejectedSuccess ? null : (
-          <DialogFooter>
-            <PrimaryButton
-              onClick={handleReject}
-              disabled={!rejectReason}
-              text="Reject Form"
-            />
-            <DefaultButton onClick={toggleHideDialog} text="Cancel" />
-          </DialogFooter>
-        )}
+        <DialogFooter>
+          <PrimaryButton
+            onClick={handleReject}
+            disabled={!rejectReason}
+            text="Reject Form"
+          />
+          <DefaultButton onClick={toggleHideDialog} text="Cancel" />
+        </DialogFooter>
       </Dialog>
 
       {loading ? (
