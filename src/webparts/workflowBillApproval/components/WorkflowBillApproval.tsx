@@ -8,6 +8,7 @@ import {
   Route,
   Navigate,
   useParams,
+  Link,
 } from "react-router-dom";
 import { ContextStore } from "./Context/ContextStore";
 import Form from "./Forms/Form";
@@ -105,7 +106,7 @@ const SuccessPage: React.FC = () => {
     <div style={{ textAlign: "center" }}>
       <p>{status !== "app" ? "Submitted" : "Approved"} successfully</p>
       <div className={styles.links}>
-        <a href="#/">{"Go to Home"}</a>
+        <Link to={"/"}>{"Go to Home"}</Link>
       </div>
     </div>
   );

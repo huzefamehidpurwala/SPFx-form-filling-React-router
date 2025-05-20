@@ -15,7 +15,7 @@ import {
 import { sp } from "@pnp/sp";
 import { ContextStore } from "../Context/ContextStore";
 import styles from "../WorkflowBillApproval.module.scss";
-import { useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 
 export type IFormDetails = {
   location: string;
@@ -437,7 +437,7 @@ const Form: React.FC = () => {
             <div style={{ textAlign: "center" }}>
               <p>Rejected successfully</p>
               <div className={styles.links}>
-                <a href="#/">{"Go to Home"}</a>
+                <Link to={"/"}>{"Go to Home"}</Link>
               </div>
             </div>
           ) : (
