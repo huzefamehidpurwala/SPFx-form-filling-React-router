@@ -54,7 +54,7 @@ const Form: React.FC = () => {
   const [loading, setLoading] = React.useState(false);
   const [rejectReason, setRejectReason] = React.useState("");
   const [hideDialog, setHideDialog] = React.useState(true);
-  const [currStep, setCurrStep] = React.useState(0);
+  const [currStep, setCurrStep] = React.useState(formId !== undefined ? 0 : -1);
   const [usrGroups, setUsrGroups] = React.useState<{ Title: string }[]>([]);
 
   const toggleHideDialog = (): void => setHideDialog((p) => !p);
@@ -154,14 +154,10 @@ const Form: React.FC = () => {
           break;
 
         case 0: {
-          // if (!formId) {
-          //   isAuthorized = true; // Allow all users to create a new form
-          // } else {
           isAuthorized = (
             context.pageContext.user.email.toLowerCase() ||
             context.pageContext.user.loginName.toLowerCase()
           ).includes("huzefa.m@ygr11");
-          // }
           break;
         }
 
@@ -419,6 +415,7 @@ const Form: React.FC = () => {
           </ul>
         );
       case 1:
+      case -1:
       case 0:
       default:
         return null;
@@ -432,19 +429,21 @@ const Form: React.FC = () => {
         return "PP Dept Approval Stage";
       case 3:
         return "QC Dept Approval Stage";
+      case -1:
+        return "Create New Request";
       case 0: {
-        if (formId) {
-          return "Update the Request";
-        }
-        return "Create new Request";
+        // if (formId) {
+        return "Update the Request";
+        // }
+        //   return "Create new Request";
       }
       default:
         return "Create new Request";
     }
   })();
 
-  const formEditMode = formId !== undefined;
-  const newForm = currStep === 0;
+  const updateMode = currStep === 0;
+  const isFormDisabled = currStep > 0;
   const disableSubmit =
     formDetails.location === "" ||
     formDetails.plantCode === "" ||
@@ -488,7 +487,7 @@ const Form: React.FC = () => {
           <Stack horizontal tokens={stackTokens} horizontalAlign="stretch">
             <ComboBox
               // defaultSelectedKey="C"
-              disabled={!newForm}
+              disabled={isFormDisabled}
               selectedKey={comBoxSelectedKey.location}
               onChange={(e, opt) => {
                 const name = "location";
@@ -508,7 +507,7 @@ const Form: React.FC = () => {
             />
             <ComboBox
               // defaultSelectedKey="C"
-              disabled={!newForm}
+              disabled={isFormDisabled}
               selectedKey={comBoxSelectedKey.plantCode}
               onChange={(e, opt) => {
                 const name = "plantCode";
@@ -527,7 +526,7 @@ const Form: React.FC = () => {
               // styles={comboBoxStyles}
             />
             <TextField
-              disabled={!newForm}
+              disabled={isFormDisabled}
               value={formDetails.startDate}
               onChange={handleChange}
               label="Start Date"
@@ -546,7 +545,7 @@ const Form: React.FC = () => {
             /> */}
           </>
           <TextField
-            disabled={!newForm}
+            disabled={isFormDisabled}
             value={formDetails.remarks}
             onChange={handleChange}
             label="Remarks"
@@ -554,7 +553,7 @@ const Form: React.FC = () => {
             /* rows={12} */ name="remarks"
           />
 
-          {!newForm ? (
+          {isFormDisabled ? (
             <>
               {currStep > 1 ? (
                 <div>
@@ -590,10 +589,10 @@ const Form: React.FC = () => {
             <PrimaryButton
               text={
                 loading
-                  ? formEditMode
+                  ? updateMode
                     ? "Updating..."
                     : "Submitting..."
-                  : formEditMode
+                  : updateMode
                   ? "Update"
                   : "Submit"
               }
