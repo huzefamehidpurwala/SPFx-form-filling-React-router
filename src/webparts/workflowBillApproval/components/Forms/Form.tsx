@@ -32,7 +32,6 @@ const listId = "86892207-d198-453b-9b56-01044bc52533"; // Form Entry
 const dialogContentProps = {
   type: DialogType.largeHeader,
   title: "Confirm Rejection",
-
 };
 
 const Form: React.FC = () => {
