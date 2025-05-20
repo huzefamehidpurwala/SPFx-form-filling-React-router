@@ -408,7 +408,7 @@ const Form: React.FC = () => {
         //   return "Create new Request";
       }
       default:
-        return "Create new Request";
+        return "";
     }
   })();
 

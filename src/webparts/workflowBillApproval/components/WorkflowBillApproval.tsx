@@ -12,6 +12,7 @@ import {
 } from "react-router-dom";
 import { ContextStore } from "./Context/ContextStore";
 import Form from "./Forms/Form";
+import FormsList from "./Forms/FormsList";
 
 // Define props and state interfaces for the ErrorBoundary
 interface ErrorBoundaryProps {
@@ -133,15 +134,7 @@ export default class WorkflowBillApproval extends React.Component<IWorkflowBillA
             <HashRouter>
               <Routes>
                 <Route path="/form/:formId?" element={<Form />} />
-                <Route
-                  path="/forms"
-                  element={
-                    <div style={{ textAlign: "center" }}>
-                      <p>List of Request generated</p>
-                      <Link to={"/form"}>Create new Request</Link>
-                    </div>
-                  }
-                />
+                <Route path="/forms" element={<FormsList />} />
                 <Route path="/err/:code?" element={<ErrorPage />} />
                 <Route path="/succ/:status" element={<SuccessPage />} />
                 <Route path="/" element={<Navigate to={"/forms"} replace />} />
