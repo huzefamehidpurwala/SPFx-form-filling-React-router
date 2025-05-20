@@ -127,10 +127,22 @@ export default class WorkflowBillApproval extends React.Component<IWorkflowBillA
             <HashRouter>
               <Routes>
                 <Route path="/form/:formId?" element={<Form />} />
-                {/* <Route path="/gmForm/:formId" element={<GMForm />} /> */}
+                <Route
+                  path="/forms"
+                  element={
+                    <>
+                      <p>List of Request generated</p>
+                      <Link to={"/form"}>Create new Request</Link>
+                    </>
+                  }
+                />
                 <Route path="/err/:code?" element={<ErrorPage />} />
                 <Route path="/succ/:status" element={<SuccessPage />} />
-                <Route path="*" element={<Navigate to={"/form"} replace />} />
+                <Route path="/" element={<Navigate to={"/forms"} replace />} />
+                <Route
+                  path="*"
+                  element={<Navigate to={"/err/404"} replace />}
+                />
               </Routes>
             </HashRouter>
           </ErrorBoundary>
