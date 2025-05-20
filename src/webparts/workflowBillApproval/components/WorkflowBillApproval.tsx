@@ -130,10 +130,10 @@ export default class WorkflowBillApproval extends React.Component<IWorkflowBillA
                 <Route
                   path="/forms"
                   element={
-                    <>
+                    <div style={{ textAlign: "center" }}>
                       <p>List of Request generated</p>
                       <Link to={"/form"}>Create new Request</Link>
-                    </>
+                    </div>
                   }
                 />
                 <Route path="/err/:code?" element={<ErrorPage />} />
