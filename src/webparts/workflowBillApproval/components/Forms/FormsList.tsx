@@ -157,7 +157,7 @@ const FormsList: React.FC = () => {
       try {
         setLoading(true);
         await (async () => {
-          // Create a new list item :contentReference[oaicite:10]{index=10}
+          // Create a new list item 
           const result = (await sp.web.lists
             .getById(listId)
             .items.select("Id", "location", "plantCode", "currStep")
