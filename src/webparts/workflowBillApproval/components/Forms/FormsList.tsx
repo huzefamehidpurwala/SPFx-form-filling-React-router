@@ -8,9 +8,10 @@ import {
 } from "@fluentui/react/lib/DetailsList";
 import { MarqueeSelection } from "@fluentui/react/lib/MarqueeSelection";
 import { PrimaryButton } from "@fluentui/react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { sp } from "@pnp/sp";
 import { listId } from "./Form";
+import styles from "../WorkflowBillApproval.module.scss";
 
 export interface IDetailsListBasicExampleItem {
   key: number;
@@ -26,6 +27,18 @@ const columns: IColumn[] = [
     minWidth: 100,
     maxWidth: 200,
     isResizable: true,
+    onRender(item, index, column) {
+      return (
+        <div className={styles.links}>
+          <Link
+            to={"/form/" + item["Id"]}
+            style={{ textDecoration: "underline" }}
+          >
+            {item["Id"]}
+          </Link>
+        </div>
+      );
+    },
   },
   {
     key: "column2",
@@ -182,7 +195,7 @@ const FormsList: React.FC = () => {
               ariaLabelForSelectionColumn="Toggle selection"
               ariaLabelForSelectAllCheckbox="Toggle selection for all items"
               checkButtonAriaLabel="select row"
-              selectionMode={SelectionMode.single}
+              selectionMode={SelectionMode.none}
             />
           </MarqueeSelection>
           {/* Optionally display selectionDetails somewhere, e.g.: */}
