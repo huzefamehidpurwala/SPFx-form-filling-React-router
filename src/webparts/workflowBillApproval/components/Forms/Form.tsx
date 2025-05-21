@@ -342,7 +342,14 @@ const Form: React.FC = () => {
     switch (currStep) {
       case 2:
         return (
-          <div>
+          <div
+            style={{
+              marginTop: "16px",
+              marginBottom: "16px",
+              paddingBottom: "16px",
+              borderBottom: "1px solid black",
+            }}
+          >
             {ppComments.map((st, i) => {
               return (
                 <div key={i}>
@@ -364,7 +371,13 @@ const Form: React.FC = () => {
 
       case 3:
         return (
-          <div>
+          <div
+            style={{
+              marginTop: "16px",
+              paddingBottom: "16px",
+              borderBottom: "1px solid black",
+            }}
+          >
             {qcComments.map((st, i) => {
               return (
                 <div key={i}>
@@ -527,35 +540,46 @@ const Form: React.FC = () => {
 
           {isFormDisabled ? (
             <>
-              {currStep > 1 ? (
-                <div>
-                  <span>Approved By:</span>
-                  <ol>
-                    {currStep > 1 && <li>GM User</li>}
-                    {currStep > 2 && <li>PP Department</li>}
-                    {currStep > 3 && <li>QC Department</li>}
-                  </ol>
-                </div>
-              ) : null}
-
               {extras}
 
-              <Stack
-                horizontal
-                tokens={{ childrenGap: 8 }}
-                style={{ marginTop: "12px", float: "right" }}
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "flex-start",
+                  marginTop: "16px",
+                }}
               >
-                <DefaultButton
-                  type="button"
-                  text="Reject"
-                  onClick={toggleHideDialog}
-                />
-                <PrimaryButton
-                  type="button"
-                  text="Approve"
-                  onClick={handleApprove}
-                />
-              </Stack>
+                <div>
+                  {currStep > 1 ? (
+                    <>
+                      <span>Approved By:</span>
+                      <ol>
+                        {currStep > 1 && <li>GM User</li>}
+                        {currStep > 2 && <li>PP Department</li>}
+                        {currStep > 3 && <li>QC Department</li>}
+                      </ol>
+                    </>
+                  ) : null}
+                </div>
+
+                <Stack
+                  horizontal
+                  tokens={{ childrenGap: 8 }}
+                  // style={{ marginTop: "12px", float: "right" }}
+                >
+                  <DefaultButton
+                    type="button"
+                    text="Reject"
+                    onClick={toggleHideDialog}
+                  />
+                  <PrimaryButton
+                    type="button"
+                    text="Approve"
+                    onClick={handleApprove}
+                  />
+                </Stack>
+              </div>
             </>
           ) : (
             <PrimaryButton
