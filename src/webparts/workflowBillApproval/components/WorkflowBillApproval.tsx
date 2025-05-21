@@ -45,8 +45,21 @@ class ErrorBoundary extends React.Component<
 
   render(): React.ReactNode {
     if (this.state.hasError) {
-      // Redirect to /err500 on any rendering error
-      return <Navigate to="/err500" replace />;
+      // * not working
+      // Redirect to /err/500 on any rendering error
+      // return <Navigate to="/err/500" replace />;
+
+      return (
+        <div style={{ padding: "2rem", textAlign: "center" }}>
+          <h1>{"Oops! Something went wrong on our end."}</h1>
+          <PrimaryButton
+            iconProps={{ iconName: "Refresh" }}
+            onClick={() => window.location.reload()}
+          >
+            Refresh
+          </PrimaryButton>
+        </div>
+      );
     }
 
     return this.props.children;
