@@ -140,8 +140,8 @@ export default class WorkflowBillApproval extends React.Component<IWorkflowBillA
             hasTeamsContext ? styles.teams : ""
           }`}
         >
-          <ErrorBoundary>
-            <HashRouter>
+          <HashRouter>
+            <ErrorBoundary>
               <Routes>
                 <Route path="/form/:formId?" element={<Form />} />
                 <Route path="/forms" element={<FormsList />} />
@@ -153,8 +153,8 @@ export default class WorkflowBillApproval extends React.Component<IWorkflowBillA
                   element={<Navigate to={"/err/404"} replace />}
                 />
               </Routes>
-            </HashRouter>
-          </ErrorBoundary>
+            </ErrorBoundary>
+          </HashRouter>
         </section>
       </ContextStore.Provider>
     );
