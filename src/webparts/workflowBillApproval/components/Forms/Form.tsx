@@ -69,13 +69,14 @@ const Form: React.FC = () => {
   const [rejectReason, setRejectReason] = React.useState("");
   const [hideDialog, setHideDialog] = React.useState(true);
   const [currStep, setCurrStep] = React.useState<number>(-2); // formId !== undefined ? 0 : -1
-  // const [usrGroups, setUsrGroups] = React.useState<{ Title: string }[]>([]);
+  const [usrGroups, setUsrGroups] = React.useState<{ Title: string }[]>([]);
   const [comments, setComments] = React.useState<Record<number, boolean>>({});
+  const [authEMail, setAuthEMail] = React.useState(""); // purposely EMail has m capital as same is the property in response
 
   const toggleHideDialog = (): void => setHideDialog((p) => !p);
 
   React.useEffect(() => {
-    /* (async () => {
+    (async () => {
       try {
         setLoading(true);
         await (async () => {
@@ -96,7 +97,7 @@ const Form: React.FC = () => {
     })().catch((error) => {
       console.error("catch external creating item:", error);
       navigate("/err/500", { replace: true });
-    }); */
+    });
 
     if (!formId) {
       // navigate("/err/404");
@@ -109,14 +110,25 @@ const Form: React.FC = () => {
       try {
         setLoading(true);
         await (async () => {
-          // Create a new list item :contentReference[oaicite:10]{index=10}
+          // Create a new list item
           const result = await sp.web.lists
             .getById(listId)
             .items.getById(Number(formId))
+            .select(
+              "Author/EMail",
+              "location",
+              "plantCode",
+              "startDate",
+              "remarks",
+              "currStep",
+              "Id"
+            )
+            .expand("Author")
             .get();
           //   console.log("Created item:", result);
           setFormDetails(result);
           setCurrStep(result.currStep);
+          setAuthEMail(result.Author.EMail);
           setComBoxSelectedKey({
             location: result.location.toLowerCase(),
             plantCode: result.plantCode.toLowerCase(),
@@ -138,40 +150,34 @@ const Form: React.FC = () => {
   }, [formId]);
 
   React.useEffect(() => {
-    if (formId /* && usrGroups.length > 0 */ && currStep > -1) {
+    if (formId && usrGroups.length > 0 && currStep > -1) {
       let isAuthorized = false;
       switch (currStep) {
-        // case 1:
-        // isAuthorized = usrGroups.some((group) => group.Title.toLowerCase().includes("gm user"));
-        // isAuthorized = (
-        //   context.pageContext.user.email.toLowerCase() ||
-        //   context.pageContext.user.loginName.toLowerCase()
-        // ).includes("sigar@ygr11");
-        // break;
-
-        // case 2:
-        // isAuthorized = usrGroups.some((group) => group.Title.toLowerCase().includes("pp dept"));
-        // isAuthorized = (
-        //   context.pageContext.user.email.toLowerCase() ||
-        //   context.pageContext.user.loginName.toLowerCase()
-        // ).includes("sigar@ygr11");
-        // break;
-
         case 1:
+          isAuthorized = usrGroups.some((group) =>
+            group.Title.toLowerCase().includes(
+              formDetails.location.toLowerCase()
+            )
+          );
+          break;
+
         case 2:
+          isAuthorized = usrGroups.some((group) =>
+            group.Title.toLowerCase().includes("pp")
+          );
+          break;
+
         case 3:
-          // isAuthorized = usrGroups.some((group) => group.Title.toLowerCase().includes("qc dept"));
-          isAuthorized = (
-            context.pageContext.user.email.toLowerCase() ||
-            context.pageContext.user.loginName.toLowerCase()
-          ).includes("sigar@ygr11");
+          isAuthorized = usrGroups.some((group) =>
+            group.Title.toLowerCase().includes("qc")
+          );
           break;
 
         case 0: {
           isAuthorized = (
             context.pageContext.user.email.toLowerCase() ||
             context.pageContext.user.loginName.toLowerCase()
-          ).includes("huzefa.m@ygr11");
+          ).includes(authEMail.toLowerCase());
           break;
         }
 
@@ -183,7 +189,7 @@ const Form: React.FC = () => {
         navigate("/err/401", { replace: true });
       }
     }
-  }, [/* usrGroups.length, */ currStep, formId]);
+  }, [usrGroups.length, currStep, formId]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
     const { name, value } = e.target;
@@ -207,7 +213,7 @@ const Form: React.FC = () => {
     (async () => {
       try {
         setLoading(true);
-        // Create a new list item :contentReference[oaicite:10]{index=10}
+        // Create a new list item
         if (!formId) {
           /* const result = */ await sp.web.lists.getById(listId).items.add({
             location: formDetails.location, //"Mumbai Office",
@@ -269,7 +275,7 @@ const Form: React.FC = () => {
         : "Approved by " + context.pageContext.user.displayName;
       try {
         setLoading(true);
-        // Create a new list item :contentReference[oaicite:10]{index=10}
+        // Create a new list item
         /* const result =  */ await sp.web.lists
           .getById(listId)
           .items.getById(Number(formId))
@@ -297,7 +303,7 @@ const Form: React.FC = () => {
     (async () => {
       try {
         setLoading(true);
-        // Create a new list item :contentReference[oaicite:10]{index=10}
+        // Create a new list item
         /* const result =  */ await sp.web.lists
           .getById(listId)
           .items.getById(Number(formId))
