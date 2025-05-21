@@ -126,7 +126,7 @@ const FormsList: React.FC = () => {
                     //   return "Create new Request";
                   }
                   default:
-                    return "";
+                    return "Approved";
                 }
               })(item.currStep),
             }))
