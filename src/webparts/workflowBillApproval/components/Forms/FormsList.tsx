@@ -30,11 +30,8 @@ const columns: IColumn[] = [
     onRender(item, index, column) {
       return (
         <div className={styles.links}>
-          <Link
-            to={"/form/" + item["Id"]}
-            style={{ textDecoration: "underline" }}
-          >
-            {item["Id"]}
+          <Link to={"/form/" + item.Id} style={{ textDecoration: "underline" }}>
+            {item.Id}
           </Link>
         </div>
       );
