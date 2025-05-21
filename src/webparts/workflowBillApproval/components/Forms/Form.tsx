@@ -1,13 +1,16 @@
 import * as React from "react";
 import {
   ComboBox,
+  DatePicker,
   DefaultButton,
+  defaultDatePickerStrings,
   Dialog,
   DialogContent,
   DialogFooter,
   DialogType,
   IComboBoxOption,
   IStackTokens,
+  mergeStyleSets,
   PrimaryButton,
   Stack,
   TextField,
@@ -48,6 +51,11 @@ const qcComments = [
   "All BOM Component Quantity is check and Found O.K",
 ];
 
+const datePickerStyles = mergeStyleSets({
+  root: { selectors: { "> *": { marginBottom: 15 } } },
+  control: { maxWidth: 300, marginBottom: 15 },
+});
+
 const Form: React.FC = () => {
   const { spContext: context } = React.useContext(ContextStore);
 
@@ -57,7 +65,7 @@ const Form: React.FC = () => {
   const [formDetails, setFormDetails] = React.useState<IFormDetails>({
     location: "",
     plantCode: "",
-    startDate: "",
+    startDate: new Date().toUTCString(),
     materialCodes: "",
     remarks: "",
   });
@@ -333,6 +341,16 @@ const Form: React.FC = () => {
     });
   };
 
+  const onFormatDate = (date?: Date): string => {
+    return !date
+      ? ""
+      : String(date.getDate()).padStart(2, "0") +
+          "/" +
+          String(date.getMonth() + 1).padStart(2, "0") +
+          "/" +
+          date.getFullYear();
+  };
+
   const options: IComboBoxOption[] = [
     { key: "umargam", text: "Umargam" },
     // { key: "tumb", text: "Tumb" },
@@ -473,7 +491,6 @@ const Form: React.FC = () => {
           </h4>
           <Stack horizontal tokens={stackTokens} horizontalAlign="stretch">
             <ComboBox
-              // defaultSelectedKey="C"
               disabled={isFormDisabled}
               selectedKey={comBoxSelectedKey.location}
               onChange={(e, opt) => {
@@ -490,10 +507,8 @@ const Form: React.FC = () => {
               }}
               label="Location"
               options={options}
-              // styles={comboBoxStyles}
             />
             <ComboBox
-              // defaultSelectedKey="C"
               disabled={isFormDisabled}
               selectedKey={comBoxSelectedKey.plantCode}
               onChange={(e, opt) => {
@@ -510,14 +525,25 @@ const Form: React.FC = () => {
               }}
               label="Plant Code & Name"
               options={optionsPl}
-              // styles={comboBoxStyles}
             />
-            <TextField
-              disabled={isFormDisabled}
-              value={formDetails.startDate}
-              onChange={handleChange}
-              label="Start Date"
-              name="startDate"
+            <DatePicker
+              label="Start date"
+              ariaLabel="Select a date. Input format is dd/mm/yyyy."
+              allowTextInput // used just for good UI to render as input element
+              value={new Date(formDetails.startDate)}
+              onSelectDate={(date) => {
+                if (date) {
+                  setFormDetails((p) => ({
+                    ...p,
+                    startDate: date.toUTCString(),
+                  }));
+                }
+              }}
+              formatDate={onFormatDate}
+              minDate={new Date()}
+              className={datePickerStyles.control}
+              // DatePicker uses English strings by default. For localized apps, you must override this prop.
+              strings={defaultDatePickerStrings}
             />
           </Stack>
           <>
