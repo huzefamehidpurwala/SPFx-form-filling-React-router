@@ -56,6 +56,7 @@ class ErrorBoundary extends React.Component<
 // Reusable ErrorPage component
 const ErrorPage: React.FC = () => {
   const { code } = useParams();
+  const navigate = useNavigate();
   let title, message;
 
   switch (code) {
@@ -94,9 +95,12 @@ const ErrorPage: React.FC = () => {
     <div style={{ padding: "2rem", textAlign: "center" }}>
       <h1>{title}</h1>
       <p>{message}</p>
-      <div className={styles.links}>
-        <a href="#/">Return to Home</a>
-      </div>
+      <PrimaryButton
+        iconProps={{ iconName: "Back" }}
+        onClick={() => navigate("/")}
+      >
+        {"Go to Home"}
+      </PrimaryButton>
     </div>
   );
 };
