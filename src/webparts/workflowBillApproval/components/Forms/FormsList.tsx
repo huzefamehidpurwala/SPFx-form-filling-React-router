@@ -60,6 +60,59 @@ const columns: IColumn[] = [
     maxWidth: 300,
     minWidth: 100,
     isResizable: true,
+    onRender(item) {
+      let statusMsg = "";
+      switch (item.currStep) {
+        case 1:
+          statusMsg = "GM User Approval Stage";
+          break;
+
+        case 2:
+          statusMsg = "PP Dept Approval Stage";
+          break;
+
+        case 3:
+          statusMsg = "QC Dept Approval Stage";
+          break;
+
+        case -1:
+          statusMsg = "Create New Request";
+          break;
+
+        case 0:
+          statusMsg = "Rejected";
+          break;
+
+        default:
+          statusMsg = "Approved";
+          break;
+      }
+      return (
+        <div
+          style={{
+            display: "flex",
+            columnGap: "8px",
+            // justifyContent: "center",
+            alignItems: "center",
+          }}
+        >
+          <span
+            style={{
+              width: "12px",
+              height: "12px",
+              backgroundColor:
+                item.currStep === 0
+                  ? "red"
+                  : item.currStep > 3
+                  ? "green"
+                  : undefined,
+              borderRadius: "999px",
+            }}
+          />
+          <span>{statusMsg}</span>
+        </div>
+      );
+    },
   },
 ];
 
@@ -114,33 +167,7 @@ const FormsList: React.FC = () => {
             plantCode: string;
             currStep: number;
           }[];
-          //   console.log("Created item:", result);
-          setItems(
-            result.map((item) => ({
-              key: item.Id,
-              ...item,
-              status: ((currStep: number) => {
-                switch (currStep) {
-                  case 1:
-                    return "GM User Approval Stage";
-                  case 2:
-                    return "PP Dept Approval Stage";
-                  case 3:
-                    return "QC Dept Approval Stage";
-                  case -1:
-                    return "Create New Request";
-                  case 0: {
-                    // if (formId) {
-                    return "Update the Request";
-                    // }
-                    //   return "Create new Request";
-                  }
-                  default:
-                    return "Approved";
-                }
-              })(item.currStep),
-            }))
-          );
+          setItems(result.map((item) => ({ key: item.Id, ...item })));
         })().catch((error) => {
           console.error("catch haha Error creating item:", error);
           navigate("/err/500", { replace: true });

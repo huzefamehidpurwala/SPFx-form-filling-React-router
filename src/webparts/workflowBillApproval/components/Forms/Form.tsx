@@ -414,12 +414,8 @@ const Form: React.FC = () => {
         return "QC Dept Approval Stage";
       case -1:
         return "Create New Request";
-      case 0: {
-        // if (formId) {
+      case 0:
         return "Update the Request";
-        // }
-        //   return "Create new Request";
-      }
       default:
         return "Approved";
     }
