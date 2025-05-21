@@ -8,11 +8,12 @@ import {
   Route,
   Navigate,
   useParams,
-  Link,
+  useNavigate,
 } from "react-router-dom";
 import { ContextStore } from "./Context/ContextStore";
 import Form from "./Forms/Form";
 import FormsList from "./Forms/FormsList";
+import { PrimaryButton } from "@fluentui/react";
 
 // Define props and state interfaces for the ErrorBoundary
 interface ErrorBoundaryProps {
@@ -102,6 +103,7 @@ const ErrorPage: React.FC = () => {
 
 const SuccessPage: React.FC = () => {
   const { status } = useParams();
+  const navigate = useNavigate();
 
   const statusMsg: Record<string, string> = {
     app: "Approved",
@@ -113,9 +115,12 @@ const SuccessPage: React.FC = () => {
   return (
     <div style={{ textAlign: "center" }}>
       <p>{statusMsg[status!] || "Done"} successfully</p>
-      <div className={styles.links}>
-        <Link to={"/"}>{"Go to Home"}</Link>
-      </div>
+      <PrimaryButton
+        iconProps={{ iconName: "Back" }}
+        onClick={() => navigate("/")}
+      >
+        {"Go to Home"}
+      </PrimaryButton>
     </div>
   );
 };
