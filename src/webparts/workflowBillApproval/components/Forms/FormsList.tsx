@@ -7,7 +7,7 @@ import {
   SelectionMode,
 } from "@fluentui/react/lib/DetailsList";
 import { MarqueeSelection } from "@fluentui/react/lib/MarqueeSelection";
-import { PrimaryButton } from "@fluentui/react";
+import { Icon, PrimaryButton } from "@fluentui/react";
 import { Link, useNavigate } from "react-router-dom";
 import { sp } from "@pnp/sp";
 import { listId } from "./Form";
@@ -27,11 +27,11 @@ const columns: IColumn[] = [
     minWidth: 100,
     maxWidth: 200,
     isResizable: true,
-    onRender(item, index, column) {
+    onRender(item) {
       return (
         <div className={styles.links}>
           <Link to={"/form/" + item.Id} style={{ textDecoration: "underline" }}>
-            {item.Id}
+            {item.Id} <Icon iconName="NavigateExternalInline" />
           </Link>
         </div>
       );
