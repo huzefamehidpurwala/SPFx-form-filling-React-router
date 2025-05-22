@@ -69,10 +69,6 @@ const Form: React.FC = () => {
     materialCodes: "",
     remarks: "",
   });
-  const [comBoxSelectedKey, setComBoxSelectedKey] = React.useState({
-    location: "",
-    plantCode: "",
-  });
   const [loading, setLoading] = React.useState(false);
   const [rejectReason, setRejectReason] = React.useState("");
   const [hideDialog, setHideDialog] = React.useState(true);
@@ -158,10 +154,6 @@ const Form: React.FC = () => {
 
         setFormDetails(listItemResult);
         setCurrStep(rCurrStep);
-        setComBoxSelectedKey({
-          location: listItemResult.location.toLowerCase(),
-          plantCode: listItemResult.plantCode.toLowerCase(),
-        });
       } catch (error) {
         console.error("Error getting item:", error);
         navigate("/err/500", { replace: true });
@@ -208,19 +200,19 @@ const Form: React.FC = () => {
           });
         } else {
           await sp.web.lists
-          .getById(listId)
-          .items.getById(Number(formId))
-          .update({
-            location: formDetails.location, //"Mumbai Office",
-            plantCode: formDetails.plantCode, //"PLNT-001",
-            startDate: formDetails.startDate, //"2025-06-01",
-            remarks: formDetails.remarks, //"Initial entry via PnP Graph",
-            redirectURL: absoluteUrl + pageRelativePath + hashRoute,
-            currStep: 1,
-            reasonOfRejection: null,
-            rejectedBy: null,
-            rejectedFromStep: null,
-          });
+            .getById(listId)
+            .items.getById(Number(formId))
+            .update({
+              location: formDetails.location, //"Mumbai Office",
+              plantCode: formDetails.plantCode, //"PLNT-001",
+              startDate: formDetails.startDate, //"2025-06-01",
+              remarks: formDetails.remarks, //"Initial entry via PnP Graph",
+              redirectURL: absoluteUrl + pageRelativePath + hashRoute,
+              currStep: 1,
+              reasonOfRejection: null,
+              rejectedBy: null,
+              rejectedFromStep: null,
+            });
         }
         navigate("/succ/upd", { replace: true });
       } catch (error) {
@@ -454,14 +446,10 @@ const Form: React.FC = () => {
           <Stack horizontal tokens={stackTokens} horizontalAlign="stretch">
             <ComboBox
               disabled={isFormDisabled}
-              selectedKey={comBoxSelectedKey.location}
+              selectedKey={formDetails.location}
               onChange={(_, opt) => {
                 const name = "location";
                 const value = opt?.text || "";
-                setComBoxSelectedKey((p) => ({
-                  ...p,
-                  location: String(opt?.key) || "",
-                }));
                 setFormDetails((prevDetails) => ({
                   ...prevDetails,
                   [name]: value,
@@ -472,14 +460,10 @@ const Form: React.FC = () => {
             />
             <ComboBox
               disabled={isFormDisabled}
-              selectedKey={comBoxSelectedKey.plantCode}
+              selectedKey={formDetails.plantCode}
               onChange={(_, opt) => {
                 const name = "plantCode";
                 const value = opt?.text || "";
-                setComBoxSelectedKey((p) => ({
-                  ...p,
-                  plantCode: String(opt?.key) || "",
-                }));
                 setFormDetails((prevDetails) => ({
                   ...prevDetails,
                   [name]: value,
