@@ -65,7 +65,7 @@ const Form: React.FC = () => {
   const [formDetails, setFormDetails] = React.useState<IFormDetails>({
     location: "",
     plantCode: "",
-    startDate: new Date().toUTCString(),
+    startDate: new Date().toISOString(),
     materialCodes: "",
     remarks: "",
   });
@@ -493,7 +493,7 @@ const Form: React.FC = () => {
             <ComboBox
               disabled={isFormDisabled}
               selectedKey={comBoxSelectedKey.location}
-              onChange={(e, opt) => {
+              onChange={(_, opt) => {
                 const name = "location";
                 const value = opt?.text || "";
                 setComBoxSelectedKey((p) => ({
@@ -511,7 +511,7 @@ const Form: React.FC = () => {
             <ComboBox
               disabled={isFormDisabled}
               selectedKey={comBoxSelectedKey.plantCode}
-              onChange={(e, opt) => {
+              onChange={(_, opt) => {
                 const name = "plantCode";
                 const value = opt?.text || "";
                 setComBoxSelectedKey((p) => ({
@@ -527,6 +527,7 @@ const Form: React.FC = () => {
               options={optionsPl}
             />
             <DatePicker
+              disabled={isFormDisabled}
               label="Start date"
               ariaLabel="Select a date. Input format is dd/mm/yyyy."
               allowTextInput // used just for good UI to render as input element
@@ -535,12 +536,12 @@ const Form: React.FC = () => {
                 if (date) {
                   setFormDetails((p) => ({
                     ...p,
-                    startDate: date.toUTCString(),
+                    startDate: date.toISOString(),
                   }));
                 }
               }}
               formatDate={onFormatDate}
-              minDate={new Date()}
+              // minDate={new Date()}
               className={datePickerStyles.control}
               // DatePicker uses English strings by default. For localized apps, you must override this prop.
               strings={defaultDatePickerStrings}
