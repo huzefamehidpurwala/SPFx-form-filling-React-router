@@ -195,7 +195,7 @@ const Form: React.FC = () => {
         setLoading(true);
         // Create a new list item
         if (!formId) {
-          /* const result = */ await sp.web.lists.getById(listId).items.add({
+          await sp.web.lists.getById(listId).items.add({
             location: formDetails.location, //"Mumbai Office",
             plantCode: formDetails.plantCode, //"PLNT-001",
             startDate: formDetails.startDate, //"2025-06-01",
@@ -206,10 +206,8 @@ const Form: React.FC = () => {
             rejectedBy: null,
             rejectedFromStep: null,
           });
-          navigate("/succ/sub", { replace: true });
-          return;
-        }
-        /* const result = */ await sp.web.lists
+        } else {
+          await sp.web.lists
           .getById(listId)
           .items.getById(Number(formId))
           .update({
@@ -223,16 +221,8 @@ const Form: React.FC = () => {
             rejectedBy: null,
             rejectedFromStep: null,
           });
+        }
         navigate("/succ/upd", { replace: true });
-        // console.log("Created item:", result);
-        // setComBoxSelectedKey({ location: "", plantCode: "" });
-        // setFormDetails({
-        //   location: "",
-        //   plantCode: "",
-        //   startDate: "",
-        //   materialCodes: "",
-        //   remarks: "",
-        // });
       } catch (error) {
         console.error("Error creating item:", error);
       } finally {
