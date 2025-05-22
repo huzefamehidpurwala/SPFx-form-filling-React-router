@@ -260,6 +260,28 @@ const Form: React.FC = () => {
     });
   };
 
+  const handleDelete = (e: React.MouseEvent<HTMLButtonElement>): void => {
+    (async () => {
+      try {
+        setLoading(true);
+        await sp.web.lists
+          .getById(listId)
+          .items.getById(Number(formId))
+          .delete();
+        navigate("/succ/del", { replace: true });
+      } catch (error) {
+        console.error("Error creating item:", error);
+      } finally {
+        setLoading(false);
+        // setRejectReason("");
+        setHideDialog(true);
+      }
+    })().catch((error) => {
+      console.error("catch haha Error creating item:", error);
+      navigate("/err/500", { replace: true });
+    });
+  };
+
   const handleReject = (e: React.MouseEvent<HTMLButtonElement>): void => {
     // Update the row data in the list
     (async () => {
@@ -557,20 +579,35 @@ const Form: React.FC = () => {
               </div>
             </>
           ) : (
-            <PrimaryButton
-              text={
-                loading
-                  ? updateMode
-                    ? "Updating..."
-                    : "Submitting..."
-                  : updateMode
-                  ? "Update"
-                  : "Submit"
-              }
-              disabled={disableSubmit}
-              type="submit"
-              style={{ marginTop: "12px", float: "right" }}
-            />
+            <>
+              <PrimaryButton
+                text={
+                  loading
+                    ? updateMode
+                      ? "Updating..."
+                      : "Submitting..."
+                    : updateMode
+                    ? "Update"
+                    : "Submit"
+                }
+                disabled={disableSubmit}
+                type="submit"
+                style={{ marginTop: "12px", float: "right" }}
+              />
+              {updateMode && (
+                <DefaultButton
+                  text={loading ? "Deleting..." : "Delete"}
+                  disabled={disableSubmit}
+                  type="button"
+                  onClick={handleDelete}
+                  style={{
+                    marginTop: "12px",
+                    marginRight: "8px",
+                    float: "right",
+                  }}
+                />
+              )}
+            </>
           )}
         </form>
       )}

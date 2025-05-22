@@ -127,6 +127,7 @@ const SuccessPage: React.FC = () => {
     rej: "Rejected",
     upd: "Updated",
     sub: "Submitted",
+    del: "Deleted",
   };
 
   return (
