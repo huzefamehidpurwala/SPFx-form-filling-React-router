@@ -130,6 +130,7 @@ const FormsList: React.FC = () => {
           const result = (await sp.web.lists
             .getById(listId)
             .items.select("Id", "location", "plantCode", "currStep")
+            .filter("currStep le 3")
             .get()) as {
             Id: number;
             location: string;
