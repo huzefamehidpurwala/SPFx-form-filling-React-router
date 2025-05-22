@@ -12,6 +12,7 @@ import * as strings from "WorkflowBillApprovalWebPartStrings";
 import WorkflowBillApproval from "./components/WorkflowBillApproval";
 import { IWorkflowBillApprovalProps } from "./components/IWorkflowBillApprovalProps";
 import { sp } from "@pnp/sp";
+import "../../../dist/tailwind.css";
 
 export interface IWorkflowBillApprovalWebPartProps {
   description: string;
