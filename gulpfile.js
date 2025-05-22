@@ -18,5 +18,21 @@ const { addFastServe } = require("spfx-fast-serve-helpers");
 addFastServe(build);
 /* end of fast-serve */
 
+/* tailwindcss */
+const postcss = require("gulp-postcss");
+const tailwind = require("@tailwindcss/postcss");
+const tailwindcss = build.subTask(
+  "@tailwindcss/postcss",
+  function (gulp, buildOptions, done) {
+    gulp
+      .src("./src/tailwind.css")
+      .pipe(postcss([tailwind("./tailwind.config.js"),]))
+      .pipe(gulp.dest("dist"));
+    done();
+  }
+);
+build.rig.addPreBuildTask(tailwindcss);
+/* end of tailwindcss */
+
 build.initialize(require('gulp'));
 
