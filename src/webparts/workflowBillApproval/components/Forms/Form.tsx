@@ -446,7 +446,7 @@ const Form: React.FC = () => {
           <Stack horizontal tokens={stackTokens} horizontalAlign="stretch">
             <ComboBox
               disabled={isFormDisabled}
-              selectedKey={formDetails.location}
+              selectedKey={formDetails.location.toLowerCase()}
               onChange={(_, opt) => {
                 const name = "location";
                 const value = opt?.text || "";
@@ -460,7 +460,7 @@ const Form: React.FC = () => {
             />
             <ComboBox
               disabled={isFormDisabled}
-              selectedKey={formDetails.plantCode}
+              selectedKey={formDetails.plantCode.toLowerCase()}
               onChange={(_, opt) => {
                 const name = "plantCode";
                 const value = opt?.text || "";
