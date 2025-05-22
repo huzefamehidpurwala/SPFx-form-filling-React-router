@@ -87,15 +87,10 @@ const Form: React.FC = () => {
     (async () => {
       try {
         setLoading(true);
-        await (async () => {
-          // Get all groups for the current user
-          const userGroups: Array<{ Title: string }> =
-            await sp.web.currentUser.groups.select("Title").get();
-          setUsrGroups(userGroups);
-        })().catch((error) => {
-          console.error("catch haha Error creating item:", error);
-          navigate("/err/500", { replace: true });
-        });
+        // Get all groups for the current user
+        const userGroups: Array<{ Title: string }> =
+          await sp.web.currentUser.groups.select("Title").get();
+        setUsrGroups(userGroups);
       } catch (error) {
         console.error("Error creating item:", error);
         navigate("/err/500", { replace: true });
@@ -117,33 +112,28 @@ const Form: React.FC = () => {
     (async () => {
       try {
         setLoading(true);
-        await (async () => {
-          // Create a new list item
-          const result = await sp.web.lists
-            .getById(listId)
-            .items.getById(Number(formId))
-            .select(
-              "Author/EMail",
-              "location",
-              "plantCode",
-              "startDate",
-              "remarks",
-              "currStep",
-              "Id"
-            )
-            .expand("Author")
-            .get();
-          //   console.log("Created item:", result);
-          setFormDetails(result);
-          setCurrStep(result.currStep);
-          setAuthEMail(result.Author.EMail);
-          setComBoxSelectedKey({
-            location: result.location.toLowerCase(),
-            plantCode: result.plantCode.toLowerCase(),
-          });
-        })().catch((error) => {
-          console.error("catch haha Error creating item:", error);
-          navigate("/err/500", { replace: true });
+        // Create a new list item
+        const result = await sp.web.lists
+          .getById(listId)
+          .items.getById(Number(formId))
+          .select(
+            "Author/EMail",
+            "location",
+            "plantCode",
+            "startDate",
+            "remarks",
+            "currStep",
+            "Id"
+          )
+          .expand("Author")
+          .get();
+        //   console.log("Created item:", result);
+        setFormDetails(result);
+        setCurrStep(result.currStep);
+        setAuthEMail(result.Author.EMail);
+        setComBoxSelectedKey({
+          location: result.location.toLowerCase(),
+          plantCode: result.plantCode.toLowerCase(),
         });
       } catch (error) {
         console.error("Error creating item:", error);

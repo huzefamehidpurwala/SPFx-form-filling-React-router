@@ -131,23 +131,17 @@ const FormsList: React.FC = () => {
     (async () => {
       try {
         setLoading(true);
-        await (async () => {
-          // Create a new list item
-          const result = (await sp.web.lists
-            .getById(listId)
-            .items.select("Id", "location", "plantCode", "currStep")
-            .filter("currStep le 3")
-            .get()) as {
-            Id: number;
-            location: string;
-            plantCode: string;
-            currStep: number;
-          }[];
-          setItems(result.map((item) => ({ key: item.Id, ...item })));
-        })().catch((error) => {
-          console.error("catch haha Error creating item:", error);
-          navigate("/err/500", { replace: true });
-        });
+        const result = (await sp.web.lists
+          .getById(listId)
+          .items.select("Id", "location", "plantCode", "currStep")
+          .filter("currStep le 3")
+          .get()) as {
+          Id: number;
+          location: string;
+          plantCode: string;
+          currStep: number;
+        }[];
+        setItems(result.map((item) => ({ key: item.Id, ...item })));
       } catch (error) {
         console.error("Error creating item:", error);
         navigate("/err/500", { replace: true });
