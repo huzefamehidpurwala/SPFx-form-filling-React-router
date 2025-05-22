@@ -157,7 +157,7 @@ const FormsList: React.FC = () => {
       try {
         setLoading(true);
         await (async () => {
-          // Create a new list item 
+          // Create a new list item
           const result = (await sp.web.lists
             .getById(listId)
             .items.select("Id", "location", "plantCode", "currStep")
@@ -186,24 +186,15 @@ const FormsList: React.FC = () => {
 
   // Render output
   return (
-    <div
-      style={{
-        maxWidth: "900px",
-        margin: "0 auto",
-        display: "flex",
-        flexDirection: "column",
-        gap: "20px",
-      }}
-    >
+    <div className="max-w-[900px] mx-auto flex flex-col gap-5 relative">
       {loading ? (
         <p>Fetching Details...</p>
       ) : (
         <>
-          <div style={{ marginLeft: "auto" }}>
+          <div className="ml-auto">
             <PrimaryButton
               onClick={() => navigate("/form")}
               iconProps={{ iconName: "Add" }}
-              // style={{ float: "right" }}
             >
               New Request
             </PrimaryButton>
@@ -222,8 +213,6 @@ const FormsList: React.FC = () => {
               selectionMode={SelectionMode.none}
             />
           </MarqueeSelection>
-          {/* Optionally display selectionDetails somewhere, e.g.: */}
-          {/* <div>{selectedId}</div> */}
         </>
       )}
     </div>
