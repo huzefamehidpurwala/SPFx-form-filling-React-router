@@ -94,7 +94,7 @@ const columns: IColumn[] = [
             alignItems: "center",
           }}
         >
-          <span
+          {/* <span
             style={{
               width: "12px",
               height: "12px",
@@ -106,8 +106,14 @@ const columns: IColumn[] = [
                   : undefined,
               borderRadius: "999px",
             }}
-          />
-          <span>{statusMsg}</span>
+          /> */}
+          <span
+            style={{
+              color: item.currStep === 0 ? "red" : undefined,
+            }}
+          >
+            {statusMsg}
+          </span>
         </div>
       );
     },
