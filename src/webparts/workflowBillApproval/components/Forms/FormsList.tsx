@@ -2,11 +2,9 @@ import * as React from "react";
 import {
   DetailsList,
   DetailsListLayoutMode,
-  Selection,
   IColumn,
   SelectionMode,
 } from "@fluentui/react/lib/DetailsList";
-import { MarqueeSelection } from "@fluentui/react/lib/MarqueeSelection";
 import { Icon, PrimaryButton } from "@fluentui/react";
 import { Link, useNavigate } from "react-router-dom";
 import { sp } from "@pnp/sp";
@@ -18,7 +16,7 @@ export interface IDetailsListBasicExampleItem {
   [key: string]: string | number;
 }
 
-// 3. Columns definition (unchanged from class version)
+// Columns definition (unchanged from class version)
 const columns: IColumn[] = [
   {
     key: "column1",
@@ -123,41 +121,12 @@ const FormsList: React.FC = () => {
   const [items, setItems] = React.useState<IDetailsListBasicExampleItem[]>([]);
   const [loading, setLoading] = React.useState(true);
 
-  // Memoized Selection instance so it's only created once
-  const selection = React.useMemo(
-    () =>
-      new Selection({
-        onSelectionChanged: () => {
-          const selectedFormId = getSelectionDetails();
-          if (selectedFormId) {
-            navigate("/form/" + selectedFormId);
-          }
-        },
-      }),
-    []
-  );
-
-  // Helper to compute selection summary from the Selection instance
-  function getSelectionDetails(): string | undefined {
-    const selectionCount = selection.getSelectedCount();
-    switch (selectionCount) {
-      case 1: {
-        const [selectedItem] =
-          selection.getSelection() as IDetailsListBasicExampleItem[];
-        return selectedItem.Id as string;
-      }
-      case 0:
-      default:
-        return undefined;
-    }
-  }
-
   React.useEffect(() => {
     (async () => {
       try {
         setLoading(true);
         await (async () => {
-          // Create a new list item 
+          // Create a new list item
           const result = (await sp.web.lists
             .getById(listId)
             .items.select("Id", "location", "plantCode", "currStep")
@@ -203,25 +172,23 @@ const FormsList: React.FC = () => {
             <PrimaryButton
               onClick={() => navigate("/form")}
               iconProps={{ iconName: "Add" }}
-              // style={{ float: "right" }}
             >
               New Request
             </PrimaryButton>
           </div>
-          <MarqueeSelection selection={selection}>
-            <DetailsList
-              items={items}
-              columns={columns}
-              setKey="set"
-              layoutMode={DetailsListLayoutMode.justified}
-              selection={selection}
-              selectionPreservedOnEmptyClick={true}
-              ariaLabelForSelectionColumn="Toggle selection"
-              ariaLabelForSelectAllCheckbox="Toggle selection for all items"
-              checkButtonAriaLabel="select row"
-              selectionMode={SelectionMode.none}
-            />
-          </MarqueeSelection>
+
+          <DetailsList
+            items={items}
+            columns={columns}
+            setKey="set"
+            layoutMode={DetailsListLayoutMode.justified}
+            // selection={selection}
+            selectionPreservedOnEmptyClick={true}
+            ariaLabelForSelectionColumn="Toggle selection"
+            ariaLabelForSelectAllCheckbox="Toggle selection for all items"
+            checkButtonAriaLabel="select row"
+            selectionMode={SelectionMode.none}
+          />
           {/* Optionally display selectionDetails somewhere, e.g.: */}
           {/* <div>{selectedId}</div> */}
         </>
