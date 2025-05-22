@@ -77,33 +77,12 @@ const Form: React.FC = () => {
   const [rejectReason, setRejectReason] = React.useState("");
   const [hideDialog, setHideDialog] = React.useState(true);
   const [currStep, setCurrStep] = React.useState<number>(-2); // formId !== undefined ? 0 : -1
-  const [usrGroups, setUsrGroups] = React.useState<{ Title: string }[]>([]);
   const [comments, setComments] = React.useState<Record<number, boolean>>({});
-  const [authEMail, setAuthEMail] = React.useState(""); // purposely EMail has m capital as same is the property in response
 
   const toggleHideDialog = (): void => setHideDialog((p) => !p);
 
   React.useEffect(() => {
-    (async () => {
-      try {
-        setLoading(true);
-        // Get all groups for the current user
-        const userGroups: Array<{ Title: string }> =
-          await sp.web.currentUser.groups.select("Title").get();
-        setUsrGroups(userGroups);
-      } catch (error) {
-        console.error("Error creating item:", error);
-        navigate("/err/500", { replace: true });
-      } finally {
-        setLoading(false);
-      }
-    })().catch((error) => {
-      console.error("catch external creating item:", error);
-      navigate("/err/500", { replace: true });
-    });
-
     if (!formId) {
-      // navigate("/err/404");
       setCurrStep(-1);
       return;
     }
@@ -113,9 +92,10 @@ const Form: React.FC = () => {
       try {
         setLoading(true);
         // Create a new list item
-        const result = await sp.web.lists
+        const listItemPr = sp.web.lists
           .getById(listId)
           .items.getById(Number(formId))
+          .expand("Author")
           .select(
             "Author/EMail",
             "location",
@@ -125,69 +105,71 @@ const Form: React.FC = () => {
             "currStep",
             "Id"
           )
-          .expand("Author")
           .get();
-        //   console.log("Created item:", result);
-        setFormDetails(result);
-        setCurrStep(result.currStep);
-        setAuthEMail(result.Author.EMail);
+
+        // Get all groups for the current user
+        const userGroupsPr = sp.web.currentUser.groups.select("Title").get(); // : Array<{ Title: string }>
+
+        const [listItemResult, userGroups] = await Promise.all([
+          listItemPr,
+          userGroupsPr,
+        ]);
+
+        const rCurrStep = listItemResult.currStep as number;
+        const autherEMail = listItemResult.Author.EMail;
+
+        let isAuthorized = false;
+        switch (rCurrStep) {
+          case 1:
+            isAuthorized = userGroups.some(
+              (group) =>
+                group.Title.toLowerCase() ===
+                "gm " + listItemResult.location.toLowerCase()
+            );
+            break;
+
+          case 2:
+            isAuthorized = userGroups.some(
+              (group) => group.Title === "PP Department"
+            );
+            break;
+
+          case 3:
+            isAuthorized = userGroups.some((group) => group.Title === "GM QC");
+            break;
+
+          case 0: {
+            // isAuthorized = (context.pageContext.user.email.toLowerCase() || context.pageContext.user.loginName.toLowerCase()).includes(authEMail.toLowerCase());
+            isAuthorized =
+              autherEMail.toLowerCase() ===
+              (context.pageContext.user.email.toLowerCase() ||
+                context.pageContext.user.loginName.toLowerCase());
+            break;
+          }
+
+          default:
+            break;
+        }
+
+        if (!isAuthorized) {
+          navigate("/err/401", { replace: true });
+          return;
+        }
+
+        setFormDetails(listItemResult);
+        setCurrStep(rCurrStep);
         setComBoxSelectedKey({
-          location: result.location.toLowerCase(),
-          plantCode: result.plantCode.toLowerCase(),
+          location: listItemResult.location.toLowerCase(),
+          plantCode: listItemResult.plantCode.toLowerCase(),
         });
       } catch (error) {
-        console.error("Error creating item:", error);
+        console.error("Error getting item:", error);
         navigate("/err/500", { replace: true });
       } finally {
         setLoading(false);
       }
-    })().catch((error) => {
-      console.error("catch external creating item:", error);
-      navigate("/err/500", { replace: true });
-    });
+    })().catch((_) => {});
   }, [formId]);
-
-  React.useEffect(() => {
-    if (formId && usrGroups.length > 0 && currStep > -1) {
-      let isAuthorized = false;
-      switch (currStep) {
-        case 1:
-          isAuthorized = usrGroups.some((group) =>
-            group.Title.toLowerCase().includes(
-              formDetails.location.toLowerCase()
-            )
-          );
-          break;
-
-        case 2:
-          isAuthorized = usrGroups.some((group) =>
-            group.Title.toLowerCase().includes("pp")
-          );
-          break;
-
-        case 3:
-          isAuthorized = usrGroups.some((group) =>
-            group.Title.toLowerCase().includes("qc")
-          );
-          break;
-
-        case 0: {
-          isAuthorized = (
-            context.pageContext.user.email.toLowerCase() ||
-            context.pageContext.user.loginName.toLowerCase()
-          ).includes(authEMail.toLowerCase());
-          break;
-        }
-
-        default:
-          break;
-      }
-
-      if (!isAuthorized) {
-        navigate("/err/401", { replace: true });
-      }
-    }
-  }, [usrGroups.length, currStep, formId]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
     const { name, value } = e.target;
