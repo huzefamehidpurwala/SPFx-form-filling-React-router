@@ -51,6 +51,17 @@ const qcComments = [
   "All BOM Component Quantity is check and Found O.K",
 ];
 
+const options: IComboBoxOption[] = [
+  { key: "Umargam", text: "Umargam" },
+  // { key: "Tumb", text: "Tumb" },
+  { key: "Silvassa", text: "Silvassa" },
+];
+const optionsPl: IComboBoxOption[] = [
+  { key: "PL001", text: "PL001" },
+  { key: "PL002", text: "PL002" },
+  { key: "PL003", text: "PL003" },
+];
+
 const datePickerStyles = mergeStyleSets({
   root: { selectors: { "> *": { marginBottom: 15 } } },
   control: { maxWidth: 300, marginBottom: 15 },
@@ -65,7 +76,7 @@ const Form: React.FC = () => {
   const [formDetails, setFormDetails] = React.useState<IFormDetails>({
     location: "",
     plantCode: "",
-    startDate: new Date().toISOString(),
+    startDate: "", // new Date().toISOString(),
     materialCodes: "",
     remarks: "",
   });
@@ -327,17 +338,6 @@ const Form: React.FC = () => {
           date.getFullYear();
   };
 
-  const options: IComboBoxOption[] = [
-    { key: "umargam", text: "Umargam" },
-    // { key: "tumb", text: "Tumb" },
-    { key: "silvassa", text: "Silvassa" },
-  ];
-  const optionsPl: IComboBoxOption[] = [
-    { key: "pl001", text: "PL001" },
-    { key: "pl002", text: "PL002" },
-    { key: "pl003", text: "PL003" },
-  ];
-
   const extras = (() => {
     switch (currStep) {
       case 2:
@@ -468,7 +468,7 @@ const Form: React.FC = () => {
           <Stack horizontal tokens={stackTokens} horizontalAlign="stretch">
             <ComboBox
               disabled={isFormDisabled}
-              selectedKey={formDetails.location.toLowerCase()}
+              selectedKey={formDetails.location}
               onChange={(_, opt) => {
                 const name = "location";
                 const value = opt?.text || "";
@@ -482,7 +482,7 @@ const Form: React.FC = () => {
             />
             <ComboBox
               disabled={isFormDisabled}
-              selectedKey={formDetails.plantCode.toLowerCase()}
+              selectedKey={formDetails.plantCode}
               onChange={(_, opt) => {
                 const name = "plantCode";
                 const value = opt?.text || "";
@@ -499,7 +499,11 @@ const Form: React.FC = () => {
               label="Start date"
               ariaLabel="Select a date. Input format is dd/mm/yyyy."
               allowTextInput // used just for good UI to render as input element
-              value={new Date(formDetails.startDate)}
+              value={
+                formDetails.startDate
+                  ? new Date(formDetails.startDate)
+                  : undefined
+              }
               onSelectDate={(date) => {
                 if (date) {
                   setFormDetails((p) => ({
@@ -597,7 +601,7 @@ const Form: React.FC = () => {
               {updateMode && (
                 <DefaultButton
                   text={loading ? "Deleting..." : "Delete"}
-                  disabled={disableSubmit}
+                  disabled={loading}
                   type="button"
                   onClick={handleDelete}
                   style={{
