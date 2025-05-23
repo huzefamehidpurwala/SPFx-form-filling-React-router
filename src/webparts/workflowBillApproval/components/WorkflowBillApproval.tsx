@@ -110,7 +110,7 @@ const ErrorPage: React.FC = () => {
       <p>{message}</p>
       <PrimaryButton
         iconProps={{ iconName: "Back" }}
-        onClick={() => navigate("/")}
+        onClick={() => navigate("/", { replace: true })}
       >
         {"Go to Home"}
       </PrimaryButton>
@@ -135,7 +135,7 @@ const SuccessPage: React.FC = () => {
       <p>{statusMsg[status!] || "Done"} successfully</p>
       <PrimaryButton
         iconProps={{ iconName: "Back" }}
-        onClick={() => navigate("/")}
+        onClick={() => navigate("/", { replace: true })}
       >
         {"Go to Home"}
       </PrimaryButton>
