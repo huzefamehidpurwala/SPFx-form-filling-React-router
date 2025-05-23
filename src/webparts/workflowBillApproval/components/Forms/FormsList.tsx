@@ -5,12 +5,12 @@ import {
   IColumn,
   SelectionMode,
 } from "@fluentui/react/lib/DetailsList";
-import { Icon, PrimaryButton } from "@fluentui/react";
+import { FontSizes, Icon, PrimaryButton } from "@fluentui/react";
 import { Link, useNavigate } from "react-router-dom";
 import { sp } from "@pnp/sp";
 import { listId } from "./Form";
-import styles from "../WorkflowBillApproval.module.scss";
 import { ContextStore } from "../Context/ContextStore";
+import styles from "../WorkflowBillApproval.module.scss";
 
 export interface IDetailsListBasicExampleItem {
   key: number;
@@ -22,32 +22,44 @@ export interface IDetailsListBasicExampleItem {
 const columns: IColumn[] = [
   {
     key: "column1",
-    name: "Form ID",
-    fieldName: "Id",
-    minWidth: 100,
-    maxWidth: 200,
-    isResizable: true,
+    name: "Edit Button",
+    fieldName: "editBtn",
+    minWidth: 16,
+    maxWidth: 16,
+    isIconOnly: true,
+    isResizable: false,
     onRender(item) {
       return (
         <>
           {Boolean(item.isAuthorized) ? (
             <div className={styles.links}>
-              <Link
-                to={"/form/" + item.Id}
-                style={{ textDecoration: "underline" }}
-              >
-                {item.Id} <Icon iconName="NavigateExternalInline" />
+              <Link to={"/form/" + item.Id}>
+                <Icon
+                  iconName="NavigateExternalInline" // iconProps={{ iconName: "NavigateExternalInline" }}
+                  style={{
+                    fontSize: FontSizes.size16, // e.g. “24px” under the hood
+                    width: FontSizes.size16,
+                    height: FontSizes.size16,
+                    textDecoration: "none",
+                  }}
+                />
               </Link>
             </div>
-          ) : (
-            <span>{item.Id}</span>
-          )}
+          ) : null}
         </>
       );
     },
   },
   {
     key: "column2",
+    name: "Form ID",
+    fieldName: "Id",
+    minWidth: 100,
+    maxWidth: 200,
+    isResizable: true,
+  },
+  {
+    key: "column3",
     name: "Location",
     fieldName: "location",
     maxWidth: 200,
@@ -55,7 +67,7 @@ const columns: IColumn[] = [
     isResizable: true,
   },
   {
-    key: "column3",
+    key: "column4",
     name: "Plant Code",
     fieldName: "plantCode",
     maxWidth: 200,
@@ -63,7 +75,7 @@ const columns: IColumn[] = [
     isResizable: true,
   },
   {
-    key: "column4",
+    key: "column5",
     name: "Status",
     fieldName: "status",
     maxWidth: 300,
