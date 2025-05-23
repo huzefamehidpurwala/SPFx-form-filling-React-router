@@ -10,9 +10,11 @@ import { Link, useNavigate } from "react-router-dom";
 import { sp } from "@pnp/sp";
 import { listId } from "./Form";
 import styles from "../WorkflowBillApproval.module.scss";
+import { ContextStore } from "../Context/ContextStore";
 
 export interface IDetailsListBasicExampleItem {
   key: number;
+  isAuthorized: number;
   [key: string]: string | number;
 }
 
@@ -27,11 +29,20 @@ const columns: IColumn[] = [
     isResizable: true,
     onRender(item) {
       return (
-        <div className={styles.links}>
-          <Link to={"/form/" + item.Id} style={{ textDecoration: "underline" }}>
-            {item.Id} <Icon iconName="NavigateExternalInline" />
-          </Link>
-        </div>
+        <>
+          {Boolean(item.isAuthorized) ? (
+            <div className={styles.links}>
+              <Link
+                to={"/form/" + item.Id}
+                style={{ textDecoration: "underline" }}
+              >
+                {item.Id} <Icon iconName="NavigateExternalInline" />
+              </Link>
+            </div>
+          ) : (
+            <span>{item.Id}</span>
+          )}
+        </>
       );
     },
   },
@@ -121,6 +132,8 @@ const columns: IColumn[] = [
 ];
 
 const FormsList: React.FC = () => {
+  const { spContext: context } = React.useContext(ContextStore);
+
   const navigate = useNavigate();
 
   // State hooks for items and selectionDetails
@@ -131,17 +144,76 @@ const FormsList: React.FC = () => {
     (async () => {
       try {
         setLoading(true);
-        const result = (await sp.web.lists
+        const itemListPr = sp.web.lists
           .getById(listId)
-          .items.select("Id", "location", "plantCode", "currStep")
+          .items.expand("Author")
+          .select("Author/EMail", "Id", "location", "plantCode", "currStep")
           .filter("currStep le 3")
-          .get()) as {
-          Id: number;
-          location: string;
-          plantCode: string;
-          currStep: number;
-        }[];
-        setItems(result.map((item) => ({ key: item.Id, ...item })));
+          .get();
+
+        // Get all groups for the current user
+        const userGroupsPr = sp.web.currentUser.groups.select("Title").get(); // : Array<{ Title: string }>
+
+        const [itemList, userGroups] = (await Promise.all([
+          itemListPr,
+          userGroupsPr,
+        ])) as [
+          {
+            Id: number;
+            location: string;
+            plantCode: string;
+            currStep: number;
+          }[],
+          { Title: string }[]
+        ];
+
+        setItems(
+          itemList.map((item) => {
+            const rCurrStep = item.currStep as number;
+            const autherEMail = (item as any).Author.EMail as string;
+
+            let isAuthorized = false;
+            switch (rCurrStep) {
+              case 1:
+                isAuthorized = userGroups.some(
+                  (group) =>
+                    group.Title.toLowerCase() ===
+                    "gm " + item.location.toLowerCase()
+                );
+                break;
+
+              case 2:
+                isAuthorized = userGroups.some(
+                  (group) => group.Title === "PP Department"
+                );
+                break;
+
+              case 3:
+                isAuthorized = userGroups.some(
+                  (group) => group.Title === "GM QC"
+                );
+                break;
+
+              case 0: {
+                // isAuthorized = (context.pageContext.user.email.toLowerCase() || context.pageContext.user.loginName.toLowerCase()).includes(authEMail.toLowerCase());
+                isAuthorized =
+                  autherEMail.toLowerCase() ===
+                  (context.pageContext.user.email.toLowerCase() ||
+                    context.pageContext.user.loginName.toLowerCase());
+                break;
+              }
+
+              default:
+                break;
+            }
+
+            return {
+              ...item,
+              key: item.Id,
+              isAuthorized: Number(isAuthorized),
+            };
+          })
+        );
       } catch (error) {
         console.error("Error creating item:", error);
         navigate("/err/500", { replace: true });
