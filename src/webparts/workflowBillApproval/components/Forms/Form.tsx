@@ -225,7 +225,7 @@ const Form: React.FC = () => {
               rejectedFromStep: null,
             });
         }
-        navigate("/succ/upd", { replace: true });
+        navigate("/succ/" + (!formId ? "sub" : "upd"), { replace: true });
       } catch (error) {
         console.error("Error creating item:", error);
       } finally {
