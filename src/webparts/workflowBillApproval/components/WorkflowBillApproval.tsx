@@ -159,7 +159,7 @@ export default class WorkflowBillApproval extends React.Component<IWorkflowBillA
               <Routes>
                 <Route path="/form/:formId?" element={<Form />} />
                 <Route path="/forms" element={<FormsList />} />
-                <Route path="/err/:code?" element={<ErrorPage />} />
+                <Route path="/err/:code" element={<ErrorPage />} />
                 <Route path="/succ/:status" element={<SuccessPage />} />
                 <Route path="/" element={<Navigate to={"/forms"} replace />} />
                 <Route
