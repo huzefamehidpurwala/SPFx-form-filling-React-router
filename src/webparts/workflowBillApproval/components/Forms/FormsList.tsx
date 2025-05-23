@@ -130,11 +130,7 @@ const columns: IColumn[] = [
               borderRadius: "999px",
             }}
           /> */}
-          <span
-            style={{
-              color: item.currStep === 0 ? "red" : undefined,
-            }}
-          >
+          <span style={{ color: item.currStep === 0 ? "red" : undefined }}>
             {statusMsg}
           </span>
         </div>
