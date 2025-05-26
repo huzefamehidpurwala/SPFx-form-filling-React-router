@@ -733,12 +733,4 @@ const Form: React.FC = () => {
   );
 };
 
-export default Form; /* function FormWithQueryProvider() {
-  // Ensure you wrap your app (or at least this component tree) in a React Query Client
-  const queryClient = new QueryClient();
-  return (
-    <QueryClientProvider client={queryClient}>
-      <Form />
-    </QueryClientProvider>
-  );
-} */
+export default Form;
