@@ -186,9 +186,7 @@ function useCreateOrUpdateFormMutation(
   const queryClient = useQueryClient();
 
   return useMutation(
-    async (
-      formData: Omit<IFormDetails, "materialCodes"> & { remarks: string }
-    ) => {
+    async (formData: IFormDetails) => {
       // Build the common payload
       const absoluteUrl = context.pageContext.web.absoluteUrl;
       const pageRelativePath =
@@ -198,7 +196,7 @@ function useCreateOrUpdateFormMutation(
         );
       const hashRoute = "#/form/";
 
-      const payload: Record<string, any> = {
+      const payload = {
         location: formData.location,
         plantCode: formData.plantCode,
         startDate: formData.startDate,
@@ -527,12 +525,7 @@ const Form: React.FC = () => {
         onSubmit={(e) => {
           e.preventDefault();
           // Trigger create/update mutation
-          createOrUpdateMutation.mutate({
-            location: formDetails.location,
-            plantCode: formDetails.plantCode,
-            startDate: formDetails.startDate,
-            remarks: formDetails.remarks,
-          });
+          createOrUpdateMutation.mutate({ ...formDetails });
         }}
       >
         {/* Status message based on currStep */}
