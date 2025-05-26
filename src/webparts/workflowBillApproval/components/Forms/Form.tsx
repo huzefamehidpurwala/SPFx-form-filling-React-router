@@ -377,7 +377,7 @@ const Form: React.FC = () => {
   //    useFormItemQuery will internally call fetchFormItem, check authorization, etc.
   const {
     data: fetchedData,
-    isFetching,
+    isInitialLoading: isLoading,
     isError: fetchError,
     error: fetchErrorObject,
   } = useFormItemQuery(formIdNumber, context);
@@ -480,12 +480,11 @@ const Form: React.FC = () => {
     !formDetails.plantCode ||
     !formDetails.startDate ||
     !formDetails.remarks ||
-    createOrUpdateMutation.isLoading ||
-    isFetching;
+    createOrUpdateMutation.isLoading;
 
   // If fetching data or running any mutation, show a “Working…” message
   if (
-    (isFetching || createOrUpdateMutation.isLoading) &&
+    (isLoading || createOrUpdateMutation.isLoading) &&
     !!formIdNumber &&
     !fetchedData
   ) {
