@@ -104,9 +104,10 @@ async function fetchFormItem(
   const listItemPromise = sp.web.lists
     .getById(listId)
     .items.getById(formId)
-    .expand("Author")
+    .expand("Author", "Editor")
     .select(
       "Author/EMail",
+      "Editor/Title",
       "location",
       "plantCode",
       "startDate",
@@ -395,6 +396,7 @@ const Form: React.FC = () => {
     Record<number, boolean>
   >({});
   const [rejectReason, setRejectReason] = React.useState("");
+  const [itemEditedByName, setItemEditedByName] = React.useState("");
 
   // Dialog state for rejection modal
   const [hideDialog, setHideDialog] = React.useState(true);
@@ -424,6 +426,7 @@ const Form: React.FC = () => {
         bomRequest: listItem.bomRequest || "",
         billParameters: JSON.parse(listItem.billParameters || "{}"),
       });
+      setItemEditedByName(listItem.Editor?.Title || "");
     }
   }, [fetchedData]);
 
@@ -759,8 +762,26 @@ const Form: React.FC = () => {
                   <>
                     <span>Approved By:</span>
                     <ol>
-                      {currStep > 1 && <li>GM User</li>}
-                      {currStep > 2 && <li>PP Department</li>}
+                      {currStep > 1 && (
+                        <li>
+                          GM User
+                          {currStep === 2 ? (
+                            <>
+                              : <u>{itemEditedByName}</u>
+                            </>
+                          ) : null}
+                        </li>
+                      )}
+                      {currStep > 2 && (
+                        <li>
+                          PP Department
+                          {currStep === 3 ? (
+                            <>
+                              : <u>{itemEditedByName}</u>
+                            </>
+                          ) : null}
+                        </li>
+                      )}
                       {currStep > 3 && <li>QC Department</li>}
                     </ol>
                   </>
