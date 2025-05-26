@@ -1,5 +1,6 @@
 import * as React from "react";
 import {
+  Checkbox,
   ComboBox,
   DatePicker,
   DefaultButton,
@@ -8,7 +9,9 @@ import {
   DialogContent,
   DialogFooter,
   DialogType,
+  Dropdown,
   IComboBoxOption,
+  IDropdownOption,
   IStackTokens,
   mergeStyleSets,
   PrimaryButton,
@@ -27,7 +30,9 @@ export type IFormDetails = {
   plantCode: string;
   startDate: string;
   materialCodes: string;
+  billParameters: Record<number, boolean>;
   remarks: string;
+  bomRequest: string;
 };
 
 export const stackTokens: IStackTokens = { childrenGap: 40 };
@@ -51,6 +56,11 @@ const qcComments = [
   "QC Parameters are properly maintained in System Material master Tab for All Material in BOM",
   "All BOM Component Quantity is check and Found O.K",
 ];
+export const comments = [
+  "All Material Codes are Existing in requested Plant code",
+  "For New Material BOM Routing Attached",
+  "Bill Of Material & Routing Attached",
+];
 
 const locationOptions: IComboBoxOption[] = [
   { key: "Umargam", text: "Umargam" },
@@ -60,6 +70,16 @@ const plantOptions: IComboBoxOption[] = [
   { key: "PL001", text: "PL001" },
   { key: "PL002", text: "PL002" },
   { key: "PL003", text: "PL003" },
+];
+const dropdownOptions: IDropdownOption[] = [
+  {
+    key: "New Material Bill Of Material",
+    text: "New Material Bill Of Material",
+  },
+  {
+    key: "Changes in Existing Bill of Material",
+    text: "Changes in Existing Bill of Material",
+  },
 ];
 
 const datePickerStyles = mergeStyleSets({
@@ -92,6 +112,9 @@ async function fetchFormItem(
       "startDate",
       "remarks",
       "currStep",
+      "materialCodes",
+      "billParameters",
+      "bomRequest",
       "Id"
     )
     .get();
@@ -201,6 +224,9 @@ function useCreateOrUpdateFormMutation(
         plantCode: formData.plantCode,
         startDate: formData.startDate,
         remarks: formData.remarks,
+        billParameters: JSON.stringify(formData.billParameters),
+        materialCodes: formData.materialCodes,
+        bomRequest: formData.bomRequest,
         redirectURL: absoluteUrl + pageRelativePath + hashRoute,
         currStep: 1,
         reasonOfRejection: null,
@@ -361,7 +387,9 @@ const Form: React.FC = () => {
     plantCode: "",
     startDate: "",
     materialCodes: "",
+    billParameters: [],
     remarks: "",
+    bomRequest: "",
   });
   const [commentsChecked, setCommentsChecked] = React.useState<
     Record<number, boolean>
@@ -386,13 +414,15 @@ const Form: React.FC = () => {
   // Populate formDetails state when fetchedData becomes available
   React.useEffect(() => {
     if (fetchedData) {
-      // fetchedData.listItem has fields: location, plantCode, startDate, remarks, etc.
+      const { listItem } = fetchedData;
       setFormDetails({
-        location: fetchedData.listItem.location || "",
-        plantCode: fetchedData.listItem.plantCode || "",
-        startDate: fetchedData.listItem.startDate || "",
-        materialCodes: fetchedData.listItem.materialCodes || "",
-        remarks: fetchedData.listItem.remarks || "",
+        location: listItem.location || "",
+        plantCode: listItem.plantCode || "",
+        startDate: listItem.startDate || "",
+        materialCodes: listItem.materialCodes || "",
+        remarks: listItem.remarks || "",
+        bomRequest: listItem.bomRequest || "",
+        billParameters: JSON.parse(listItem.billParameters || "{}"),
       });
     }
   }, [fetchedData]);
@@ -478,6 +508,8 @@ const Form: React.FC = () => {
     !formDetails.plantCode ||
     !formDetails.startDate ||
     !formDetails.remarks ||
+    !formDetails.bomRequest ||
+    !formDetails.materialCodes ||
     createOrUpdateMutation.isLoading;
 
   // If fetching data or running any mutation, show a “Working…” message
@@ -601,46 +633,114 @@ const Form: React.FC = () => {
           />
         </Stack>
 
-        {/* Remarks TextField */}
+        <div style={{ display: "flex", gap: 40 }}>
+          {/* Dropdown Section */}
+          <div>
+            <Dropdown
+              options={dropdownOptions}
+              label={"Bill of Material Request for Uploading"}
+              selectedKey={formDetails.bomRequest}
+              disabled={isFormDisabled}
+              onChange={(_, option) =>
+                setFormDetails((p) => ({
+                  ...p,
+                  bomRequest: option?.key as string,
+                }))
+              }
+              style={{ width: 250, marginTop: 8 }}
+            />
+          </div>
+          {/* Checkbox Section */}
+          <div>
+            <label
+              style={{
+                fontWeight: "600",
+                color: isFormDisabled ? "rgb(161, 159, 157)" : undefined,
+              }}
+            >
+              Confirmation on Bill Of Material Parameters
+            </label>
+            <div style={{ marginTop: 8 }}>
+              {comments.map((comm, i) => {
+                return (
+                  <React.Fragment key={i}>
+                    <Checkbox
+                      disabled={isFormDisabled}
+                      label={comm}
+                      checked={!!formDetails.billParameters[i]}
+                      styles={{ root: { marginBottom: 6 } }}
+                      onChange={(_, chckd) =>
+                        setFormDetails((p) => ({
+                          ...p,
+                          billParameters: { ...p.billParameters, [i]: !!chckd },
+                        }))
+                      }
+                    />
+                  </React.Fragment>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+
+        {/* Material Codes TextField */}
         <TextField
           disabled={isFormDisabled}
-          value={formDetails.remarks}
+          multiline
+          rows={6}
+          value={formDetails.materialCodes}
           onChange={(e: any) => {
             const { name, value } = e.target;
             setFormDetails((prev) => ({ ...prev, [name]: value }));
           }}
-          label="Remarks"
-          multiline
-          name="remarks"
+          label="Material Codes ( Max. 12 nos. )"
+          name="materialCodes"
         />
+
+        {/* Remarks TextField */}
+        <div
+          style={
+            currStep > 1
+              ? {
+                  paddingBottom: "16px",
+                  borderBottom: "1px solid black",
+                  marginBottom: "16px",
+                }
+              : undefined
+          }
+        >
+          <TextField
+            disabled={isFormDisabled}
+            value={formDetails.remarks}
+            onChange={(e: any) => {
+              const { name, value } = e.target;
+              setFormDetails((prev) => ({ ...prev, [name]: value }));
+            }}
+            label="Remarks"
+            multiline
+            name="remarks"
+          />
+        </div>
 
         {isFormDisabled ? (
           <>
             {/* Show checkboxes for PP / QC comments if we’re in those stages */}
             {currStep === 2 || currStep === 3 ? (
-              <div
-                style={{
-                  marginTop: "16px",
-                  marginBottom: "16px",
-                  paddingBottom: "16px",
-                  borderBottom: "1px solid black",
-                }}
-              >
+              <div>
                 {(currStep === 2 ? ppComments : qcComments).map((text, idx) => (
-                  <div key={idx}>
-                    <input
-                      type="checkbox"
-                      checked={commentsChecked[idx] || false}
-                      id={idx.toString()}
-                      onChange={(e) =>
+                  <React.Fragment key={idx}>
+                    <Checkbox
+                      label={text}
+                      styles={{ root: { marginBottom: 6 } }}
+                      checked={!!commentsChecked[idx]}
+                      onChange={(_, chckd) =>
                         setCommentsChecked((old) => ({
                           ...old,
-                          [idx]: e.target.checked,
+                          [idx]: !!chckd,
                         }))
                       }
                     />
-                    <label htmlFor={idx.toString()}>{text}</label>
-                  </div>
+                  </React.Fragment>
                 ))}
               </div>
             ) : null}
