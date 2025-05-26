@@ -5,7 +5,7 @@ import {
   IColumn,
   SelectionMode,
 } from "@fluentui/react/lib/DetailsList";
-import { FontSizes, Icon, PrimaryButton } from "@fluentui/react";
+import { FontSizes, Icon, PrimaryButton, SpinnerSize } from "@fluentui/react";
 import { Link, useNavigate } from "react-router-dom";
 import { sp } from "@pnp/sp";
 import { listId } from "./Form";
@@ -227,6 +227,7 @@ const FormsList: React.FC = () => {
     data: items,
     isError,
     error,
+    isFetching,
   } = useQuery(["formLists"], () =>
     fetchFormList(
       context.pageContext.user.email || context.pageContext.user.loginName
@@ -273,7 +274,6 @@ const FormsList: React.FC = () => {
               New Request
             </PrimaryButton>
           </div>
-
           <DetailsList
             items={items!}
             columns={columns}
@@ -286,8 +286,9 @@ const FormsList: React.FC = () => {
             checkButtonAriaLabel="select row"
             selectionMode={SelectionMode.none}
           />
-          {/* Optionally display selectionDetails somewhere, e.g.: */}
-          {/* <div>{selectedId}</div> */}
+          {!loading && isFetching && (
+            <Loading label="Updating..." size={SpinnerSize.small} />
+          )}
         </>
       )}
     </div>
