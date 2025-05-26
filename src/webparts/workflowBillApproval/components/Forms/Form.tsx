@@ -17,8 +17,10 @@ import {
 } from "@fluentui/react";
 import { sp } from "@pnp/sp";
 import { ContextStore } from "../Context/ContextStore";
-// import styles from "../WorkflowBillApproval.module.scss";
 import { useNavigate, useParams } from "react-router-dom";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { WebPartContext } from "@microsoft/sp-webpart-base";
+import Loading from "../../../helper/Loading";
 
 export type IFormDetails = {
   location: string;
@@ -27,9 +29,8 @@ export type IFormDetails = {
   materialCodes: string;
   remarks: string;
 };
-// Example formatting
+
 export const stackTokens: IStackTokens = { childrenGap: 40 };
-// const siteId = "cdfec0f5-6017-47aa-b95e-bdd953db733f"; // workflow-bill-approval
 export const listId = "86892207-d198-453b-9b56-01044bc52533"; // Form Entry
 
 const dialogContentProps = {
@@ -51,12 +52,11 @@ const qcComments = [
   "All BOM Component Quantity is check and Found O.K",
 ];
 
-const options: IComboBoxOption[] = [
+const locationOptions: IComboBoxOption[] = [
   { key: "Umargam", text: "Umargam" },
-  // { key: "Tumb", text: "Tumb" },
   { key: "Silvassa", text: "Silvassa" },
 ];
-const optionsPl: IComboBoxOption[] = [
+const plantOptions: IComboBoxOption[] = [
   { key: "PL001", text: "PL001" },
   { key: "PL002", text: "PL002" },
   { key: "PL003", text: "PL003" },
@@ -67,375 +67,439 @@ const datePickerStyles = mergeStyleSets({
   control: { maxWidth: 300, marginBottom: 15 },
 });
 
+/**
+ * fetchFormItem
+ *
+ * This function calls PnP/SP to get the list item and the current user's groups,
+ * then determines authorization and returns the list item and its current step.
+ *
+ * @param formId - the numeric ID of the list item to fetch
+ * @param context - the SP context (to get current user and web)
+ */
+async function fetchFormItem(
+  formId: number,
+  context: WebPartContext
+): Promise<{ listItem: any; currStep: number }> {
+  // 1) Query the list item by its ID, expanding the "Author" field so we can read the creator’s email.
+  const listItemPromise = sp.web.lists
+    .getById(listId)
+    .items.getById(formId)
+    .expand("Author")
+    .select(
+      "Author/EMail",
+      "location",
+      "plantCode",
+      "startDate",
+      "remarks",
+      "currStep",
+      "Id"
+    )
+    .get();
+
+  // 2) Query the groups for the current user
+  const userGroupsPromise = sp.web.currentUser.groups.select("Title").get();
+
+  // Wait for both to resolve in parallel
+  const [listItemResult, userGroups] = await Promise.all([
+    listItemPromise,
+    userGroupsPromise,
+  ]);
+
+  const rCurrStep = listItemResult.currStep as number;
+  const authorEmail = listItemResult.Author.EMail as string;
+
+  // 3) Check if the current user is authorized for this step
+  let isAuthorized = false;
+  switch (rCurrStep) {
+    case 1:
+      isAuthorized = userGroups.some(
+        (grp) =>
+          grp.Title.toLowerCase() ===
+          "gm " + listItemResult.location.toLowerCase()
+      );
+      break;
+    case 2:
+      isAuthorized = userGroups.some((grp) => grp.Title === "PP Department");
+      break;
+    case 3:
+      isAuthorized = userGroups.some((grp) => grp.Title === "GM QC");
+      break;
+    case 0: {
+      // If currStep is 0 (meaning “rejected from a prior step”), only the original author can edit
+      const currentUserEmail =
+        context.pageContext.user.email || context.pageContext.user.loginName;
+      isAuthorized =
+        authorEmail.toLowerCase() === currentUserEmail.toLowerCase();
+      break;
+    }
+    default:
+      break;
+  }
+
+  if (!isAuthorized) {
+    // If the user is not authorized, throw an error that our component can catch.
+    // We’ll navigate to a 401 page in the component based on this.
+    throw new Error("Unauthorized");
+  }
+
+  // Return both the raw list item and the current step number
+  return { listItem: listItemResult, currStep: rCurrStep };
+}
+
+/**
+ * useFormItemQuery
+ *
+ * Custom hook wrapping React Query's useQuery to fetch a form item by ID.
+ *
+ * @param formId - numeric ID of the item
+ * @param context - SP context from React Context
+ */
+function useFormItemQuery(formId: number | undefined, context: WebPartContext) {
+  return useQuery(
+    ["formItem", formId],
+    // queryFn only runs if formId is defined
+    () => fetchFormItem(formId as number, context),
+    {
+      enabled: formId !== undefined, // only run when formId exists
+      retry: false, // don’t retry on Unauthorized; let us handle it
+    }
+  );
+}
+
+/**
+ * useCreateOrUpdateFormMutation
+ *
+ * Custom hook wrapping React Query's useMutation to handle both “create new”
+ * and “update existing” scenarios in a single function.
+ *
+ * It inspects whether formId is present; if not, it does an “add” call; otherwise, it does an “update” call.
+ *
+ * @param formId - numeric ID (or undefined if new)
+ * @param context - SP context to get pageContext for URLs
+ * @param onSuccess - callback after success (e.g. navigate)
+ */
+function useCreateOrUpdateFormMutation(
+  formId: number | undefined,
+  context: WebPartContext,
+  onSuccess: () => void
+) {
+  const queryClient = useQueryClient();
+
+  return useMutation(
+    async (
+      formData: Omit<IFormDetails, "materialCodes"> & { remarks: string }
+    ) => {
+      // Build the common payload
+      const absoluteUrl = context.pageContext.web.absoluteUrl;
+      const pageRelativePath =
+        context.pageContext.site.serverRequestPath.replace(
+          context.pageContext.site.serverRelativeUrl,
+          ""
+        );
+      const hashRoute = "#/form/";
+
+      const payload: Record<string, any> = {
+        location: formData.location,
+        plantCode: formData.plantCode,
+        startDate: formData.startDate,
+        remarks: formData.remarks,
+        redirectURL: absoluteUrl + pageRelativePath + hashRoute,
+        currStep: 1,
+        reasonOfRejection: null,
+        rejectedBy: null,
+        rejectedFromStep: null,
+      };
+
+      if (!formId) {
+        // If there’s no formId, we “create” a new item
+        return sp.web.lists.getById(listId).items.add(payload);
+      } else {
+        // Otherwise, we “update” the existing item
+        return sp.web.lists
+          .getById(listId)
+          .items.getById(formId)
+          .update(payload);
+      }
+    },
+    {
+      onSuccess: () => {
+        // Invalidate any “formItem” queries so stale data is not shown
+        queryClient
+          .invalidateQueries(["formItem", formId])
+          .catch(console.error);
+        onSuccess(); // e.g. navigate to success page
+      },
+    }
+  );
+}
+
+/**
+ * useApproveFormMutation
+ *
+ * Custom hook wrapping React Query's useMutation to “approve” the form:
+ * advances currStep by +1 and writes any comments selected.
+ *
+ * @param formId - ID of the item
+ * @param currStep - current step number (so we can +1)
+ * @param comments - aggregated comments string
+ * @param onSuccess - callback after successful approval
+ */
+function useApproveFormMutation(
+  formId: number,
+  currStep: number,
+  comments: string,
+  onSuccess: () => void
+) {
+  const queryClient = useQueryClient();
+
+  return useMutation(
+    async () => {
+      return sp.web.lists
+        .getById(listId)
+        .items.getById(formId)
+        .update({
+          currStep: currStep + 1,
+          comments: comments,
+        });
+    },
+    {
+      onSuccess: () => {
+        queryClient
+          .invalidateQueries(["formItem", formId])
+          .catch(console.error);
+        onSuccess();
+      },
+    }
+  );
+}
+
+/**
+ * useRejectFormMutation
+ *
+ * Custom hook wrapping React Query's useMutation to “reject” the form:
+ * sets currStep to 0 and writes rejection info.
+ *
+ * @param formId - ID of item
+ * @param currStep - the step from which we are rejecting
+ * @param rejectReason - the text reason
+ * @param rejectedBy - e.g. user email
+ * @param onSuccess - callback after successful rejection
+ */
+function useRejectFormMutation(
+  formId: number,
+  currStep: number,
+  rejectReason: string,
+  rejectedBy: string,
+  onSuccess: () => void
+) {
+  const queryClient = useQueryClient();
+
+  return useMutation(
+    async () => {
+      return sp.web.lists.getById(listId).items.getById(formId).update({
+        currStep: 0,
+        reasonOfRejection: rejectReason,
+        rejectedBy: rejectedBy,
+        rejectedFromStep: currStep,
+      });
+    },
+    {
+      onSuccess: () => {
+        queryClient
+          .invalidateQueries(["formItem", formId])
+          .catch(console.error);
+        onSuccess();
+      },
+    }
+  );
+}
+
+/**
+ * useDeleteFormMutation
+ *
+ * Custom hook wrapping React Query's useMutation to delete the form item.
+ *
+ * @param formId - ID of item
+ * @param onSuccess - callback after delete
+ */
+function useDeleteFormMutation(formId: number, onSuccess: () => void) {
+  const queryClient = useQueryClient();
+
+  return useMutation(
+    async () => {
+      return sp.web.lists.getById(listId).items.getById(formId).delete();
+    },
+    {
+      onSuccess: () => {
+        queryClient
+          .invalidateQueries(["formItem", formId])
+          .catch(console.error);
+        onSuccess();
+      },
+    }
+  );
+}
+
+/**
+ * Form Component
+ *
+ * - Uses React Query's useQuery to fetch existing data (if editing).
+ * - Uses multiple useMutation hooks to handle create, update, approve, reject, delete.
+ * - Disables form fields or shows approval UI based on currStep.
+ * - Comments explain why each hook/pattern is used.
+ */
 const Form: React.FC = () => {
   const { spContext: context } = React.useContext(ContextStore);
-
-  const { formId } = useParams();
+  const { formId: rawFormId } = useParams<{ formId: string }>();
   const navigate = useNavigate();
+  // const queryClient = useQueryClient();
 
+  // Parse formId from URL params; if missing or not a number, formIdNumber is undefined
+  const formIdNumber = rawFormId ? Number(rawFormId) : undefined;
+
+  // Local React state for form fields (controlled inputs)
   const [formDetails, setFormDetails] = React.useState<IFormDetails>({
     location: "",
     plantCode: "",
-    startDate: "", // new Date().toISOString(),
+    startDate: "",
     materialCodes: "",
     remarks: "",
   });
-  const [loading, setLoading] = React.useState(false);
+  const [commentsChecked, setCommentsChecked] = React.useState<
+    Record<number, boolean>
+  >({});
   const [rejectReason, setRejectReason] = React.useState("");
+
+  // Dialog state for rejection modal
   const [hideDialog, setHideDialog] = React.useState(true);
-  const [currStep, setCurrStep] = React.useState<number>(-2); // formId !== undefined ? 0 : -1
-  const [comments, setComments] = React.useState<Record<number, boolean>>({});
 
-  const toggleHideDialog = (): void => setHideDialog((p) => !p);
+  // 1) Fetch existing form data if formIdNumber is defined
+  //    useFormItemQuery will internally call fetchFormItem, check authorization, etc.
+  const {
+    data: fetchedData,
+    isInitialLoading: isLoading,
+    isError: fetchError,
+    error: fetchErrorObject,
+  } = useFormItemQuery(formIdNumber, context);
 
+  // current step (rCurrStep) will come from fetchedData if editing; otherwise default to -1 for “new”
+  const currStep = fetchedData ? fetchedData.currStep : -1;
+
+  // Populate formDetails state when fetchedData becomes available
   React.useEffect(() => {
-    if (!formId) {
-      setCurrStep(-1);
-      return;
+    if (fetchedData) {
+      // fetchedData.listItem has fields: location, plantCode, startDate, remarks, etc.
+      setFormDetails({
+        location: fetchedData.listItem.location || "",
+        plantCode: fetchedData.listItem.plantCode || "",
+        startDate: fetchedData.listItem.startDate || "",
+        materialCodes: fetchedData.listItem.materialCodes || "",
+        remarks: fetchedData.listItem.remarks || "",
+      });
     }
+  }, [fetchedData]);
 
-    // Fetch the form data
-    (async () => {
-      try {
-        setLoading(true);
-        // Create a new list item
-        const listItemPr = sp.web.lists
-          .getById(listId)
-          .items.getById(Number(formId))
-          .expand("Author")
-          .select(
-            "Author/EMail",
-            "location",
-            "plantCode",
-            "startDate",
-            "remarks",
-            "currStep",
-            "Id"
-          )
-          .get();
-
-        // Get all groups for the current user
-        const userGroupsPr = sp.web.currentUser.groups.select("Title").get(); // : Array<{ Title: string }>
-
-        const [listItemResult, userGroups] = await Promise.all([
-          listItemPr,
-          userGroupsPr,
-        ]);
-
-        const rCurrStep = listItemResult.currStep as number;
-        const autherEMail = listItemResult.Author.EMail;
-
-        let isAuthorized = false;
-        switch (rCurrStep) {
-          case 1:
-            isAuthorized = userGroups.some(
-              (group) =>
-                group.Title.toLowerCase() ===
-                "gm " + listItemResult.location.toLowerCase()
-            );
-            break;
-
-          case 2:
-            isAuthorized = userGroups.some(
-              (group) => group.Title === "PP Department"
-            );
-            break;
-
-          case 3:
-            isAuthorized = userGroups.some((group) => group.Title === "GM QC");
-            break;
-
-          case 0: {
-            // isAuthorized = (context.pageContext.user.email.toLowerCase() || context.pageContext.user.loginName.toLowerCase()).includes(authEMail.toLowerCase());
-            isAuthorized =
-              autherEMail.toLowerCase() ===
-              (context.pageContext.user.email.toLowerCase() ||
-                context.pageContext.user.loginName.toLowerCase());
-            break;
-          }
-
-          default:
-            break;
-        }
-
-        if (!isAuthorized) {
-          navigate("/err/401", { replace: true });
-          return;
-        }
-
-        setFormDetails(listItemResult);
-        setCurrStep(rCurrStep);
-      } catch (error) {
-        console.error("Error getting item:", error);
+  // If fetchError is “Unauthorized”, send to 401; otherwise, to 500
+  React.useEffect(() => {
+    if (fetchError && fetchErrorObject instanceof Error) {
+      if (fetchErrorObject.message === "Unauthorized") {
+        navigate("/err/401", { replace: true });
+      } else {
         navigate("/err/500", { replace: true });
-      } finally {
-        setLoading(false);
       }
-    })().catch((_) => {});
-  }, [formId]);
+    }
+  }, [fetchError, fetchErrorObject, navigate]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
-    const { name, value } = e.target;
-    setFormDetails((prevDetails) => ({
-      ...prevDetails,
-      [name]: value,
-    }));
-  };
-
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>): void => {
-    e.preventDefault();
-
-    // Add a row data in the list
-    const absoluteUrl = context.pageContext.web.absoluteUrl;
-    const pageRelativePath = context.pageContext.site.serverRequestPath.replace(
-      context.pageContext.site.serverRelativeUrl,
-      ""
-    );
-    const hashRoute = "#/form/";
-
-    (async () => {
-      try {
-        setLoading(true);
-        // Create a new list item
-        if (!formId) {
-          await sp.web.lists.getById(listId).items.add({
-            location: formDetails.location, //"Mumbai Office",
-            plantCode: formDetails.plantCode, //"PLNT-001",
-            startDate: formDetails.startDate, //"2025-06-01",
-            remarks: formDetails.remarks, //"Initial entry via PnP Graph",
-            redirectURL: absoluteUrl + pageRelativePath + hashRoute,
-            currStep: 1,
-            reasonOfRejection: null,
-            rejectedBy: null,
-            rejectedFromStep: null,
-          });
-        } else {
-          await sp.web.lists
-            .getById(listId)
-            .items.getById(Number(formId))
-            .update({
-              location: formDetails.location, //"Mumbai Office",
-              plantCode: formDetails.plantCode, //"PLNT-001",
-              startDate: formDetails.startDate, //"2025-06-01",
-              remarks: formDetails.remarks, //"Initial entry via PnP Graph",
-              redirectURL: absoluteUrl + pageRelativePath + hashRoute,
-              currStep: 1,
-              reasonOfRejection: null,
-              rejectedBy: null,
-              rejectedFromStep: null,
-            });
-        }
-        navigate("/succ/" + (!formId ? "sub" : "upd"), { replace: true });
-      } catch (error) {
-        console.error("Error creating item:", error);
-      } finally {
-        setLoading(false);
+  // 2) Create/Update Mutation
+  //    onSuccess we navigate to appropriate “success” URL
+  const createOrUpdateMutation = useCreateOrUpdateFormMutation(
+    formIdNumber,
+    context,
+    () => {
+      if (formIdNumber) {
+        navigate("/succ/upd", { replace: true });
+      } else {
+        navigate("/succ/sub", { replace: true });
       }
-    })().catch((error) => {
-      console.error("catch haha Error creating item:", error);
-      navigate("/err/500", { replace: true });
-    });
-  };
+    }
+  );
 
-  const handleApprove = (e: React.MouseEvent<HTMLButtonElement>): void => {
-    // Update the row data in the list
-    (async () => {
-      const isCommentsEmpty = Object.keys(comments).every(
-        (key) => !comments[Number(key)]
-      );
-      const sendComments = !isCommentsEmpty
-        ? ppComments.filter((_, i) => comments[i]).join("\n")
-        : "Approved by " + context.pageContext.user.displayName;
-      try {
-        setLoading(true);
-        // Create a new list item
-        /* const result =  */ await sp.web.lists
-          .getById(listId)
-          .items.getById(Number(formId))
-          .update({
-            currStep: currStep + 1,
-            comments: sendComments,
-          });
-        // console.log("Created item:", result);
-        navigate("/succ/app", { replace: true });
-      } catch (error) {
-        console.error("Error creating item:", error);
-      } finally {
-        setLoading(false);
-        // setRejectReason("");
-        setHideDialog(true);
-      }
-    })().catch((error) => {
-      console.error("catch haha Error creating item:", error);
-      navigate("/err/500", { replace: true });
-    });
-  };
+  // 3) Approve Mutation (only valid if editing and currStep > 0)
+  const approveMutation = useApproveFormMutation(
+    formIdNumber as number,
+    currStep,
+    // aggregate comments (if none checked, default to “Approved by User”)
+    Object.keys(commentsChecked).some((i) => commentsChecked[Number(i)])
+      ? ppComments.filter((_, i) => commentsChecked[i]).join("\n")
+      : "Approved by " + context.pageContext.user.displayName,
+    () => {
+      navigate("/succ/app", { replace: true });
+    }
+  );
 
-  const handleDelete = (e: React.MouseEvent<HTMLButtonElement>): void => {
-    (async () => {
-      try {
-        setLoading(true);
-        await sp.web.lists
-          .getById(listId)
-          .items.getById(Number(formId))
-          .delete();
-        navigate("/succ/del", { replace: true });
-      } catch (error) {
-        console.error("Error creating item:", error);
-      } finally {
-        setLoading(false);
-        // setRejectReason("");
-        setHideDialog(true);
-      }
-    })().catch((error) => {
-      console.error("catch haha Error creating item:", error);
-      navigate("/err/500", { replace: true });
-    });
-  };
+  // 4) Reject Mutation
+  const rejectMutation = useRejectFormMutation(
+    formIdNumber as number,
+    currStep,
+    rejectReason,
+    context.pageContext.user.email ||
+      context.pageContext.user.loginName ||
+      context.pageContext.user.displayName ||
+      "",
+    () => {
+      setRejectReason("");
+      navigate("/succ/rej", { replace: true });
+    }
+  );
 
-  const handleReject = (e: React.MouseEvent<HTMLButtonElement>): void => {
-    // Update the row data in the list
-    (async () => {
-      try {
-        setLoading(true);
-        // Create a new list item
-        /* const result =  */ await sp.web.lists
-          .getById(listId)
-          .items.getById(Number(formId))
-          .update({
-            currStep: 0,
-            reasonOfRejection: rejectReason,
-            rejectedBy:
-              context.pageContext.user.email ||
-              context.pageContext.user.loginName ||
-              context.pageContext.user.displayName ||
-              "",
-            rejectedFromStep: currStep,
-          });
-        // console.log("Created item:", result);
-        setRejectReason("");
-        navigate("/succ/rej", { replace: true });
-      } catch (error) {
-        console.error("Error creating item:", error);
-      } finally {
-        setLoading(false);
-        // setRejectReason("");
-        setHideDialog(true);
-      }
-    })().catch((error) => {
-      console.error("catch haha Error creating item:", error);
-      navigate("/err/500", { replace: true });
-    });
-  };
+  // 5) Delete Mutation (only when editing & in update mode)
+  const deleteMutation = useDeleteFormMutation(formIdNumber as number, () => {
+    navigate("/succ/del", { replace: true });
+  });
 
+  // Helper to toggle reject dialog
+  const toggleHideDialog = (): void => setHideDialog((old) => !old);
+
+  // Format a Date object to “dd/MM/yyyy”
   const onFormatDate = (date?: Date): string => {
-    return !date
-      ? ""
-      : String(date.getDate()).padStart(2, "0") +
-          "/" +
-          String(date.getMonth() + 1).padStart(2, "0") +
-          "/" +
-          date.getFullYear();
+    if (!date) return "";
+    const day = String(date.getDate()).padStart(2, "0");
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const year = date.getFullYear();
+    return `${day}/${month}/${year}`;
   };
 
-  const extras = (() => {
-    switch (currStep) {
-      case 2:
-        return (
-          <div
-            style={{
-              marginTop: "16px",
-              marginBottom: "16px",
-              paddingBottom: "16px",
-              borderBottom: "1px solid black",
-            }}
-          >
-            {ppComments.map((st, i) => {
-              return (
-                <div key={i}>
-                  <input
-                    type="checkbox"
-                    checked={comments[i]}
-                    id={i.toString()}
-                    name={i.toString()}
-                    onChange={(e) =>
-                      setComments((p) => ({ ...p, [i]: e.target.checked }))
-                    }
-                  />
-                  <label htmlFor={i.toString()}>{st}</label>
-                </div>
-              );
-            })}
-          </div>
-        );
-
-      case 3:
-        return (
-          <div
-            style={{
-              marginTop: "16px",
-              paddingBottom: "16px",
-              borderBottom: "1px solid black",
-            }}
-          >
-            {qcComments.map((st, i) => {
-              return (
-                <div key={i}>
-                  <input
-                    type="checkbox"
-                    checked={comments[i]}
-                    id={i.toString()}
-                    name={i.toString()}
-                    onChange={(e) =>
-                      setComments((p) => ({ ...p, [i]: e.target.checked }))
-                    }
-                  />
-                  <label htmlFor={i.toString()}>{st}</label>
-                </div>
-              );
-            })}
-          </div>
-        );
-
-      case 1:
-      case -1:
-      case 0:
-      default:
-        return null;
-    }
-  })();
-  const statusMsg = (() => {
-    switch (currStep) {
-      case 1:
-        return "GM User Approval Stage";
-      case 2:
-        return "PP Dept Approval Stage";
-      case 3:
-        return "QC Dept Approval Stage";
-      case -1:
-        return "Create New Request";
-      case 0:
-        return "Update the Request";
-      default:
-        return "Approved";
-    }
-  })();
-
+  // Track whether we’re in “update” mode (currStep=0 means someone rejected and now they can edit)
   const updateMode = currStep === 0;
+  // If currStep > 0 (approved stages), disable the form fields
   const isFormDisabled = currStep > 0;
+
+  // Determine whether the submit/update button should be disabled
   const disableSubmit =
-    formDetails.location === "" ||
-    formDetails.plantCode === "" ||
-    formDetails.startDate === "" ||
-    formDetails.remarks === "" ||
-    loading;
+    !formDetails.location ||
+    !formDetails.plantCode ||
+    !formDetails.startDate ||
+    !formDetails.remarks ||
+    createOrUpdateMutation.isLoading;
+
+  // If fetching data or running any mutation, show a “Working…” message
+  if (
+    (isLoading || createOrUpdateMutation.isLoading) &&
+    !!formIdNumber &&
+    !fetchedData
+  ) {
+    return <Loading label="Fetching..." />;
+  }
+
+  // Now render the form (either “new” or “edit”)
   return (
     <div style={{ margin: "auto", maxWidth: "600px" }}>
+      {/* Rejection Dialog */}
       <Dialog
         hidden={hideDialog}
         onDismiss={toggleHideDialog}
         dialogContentProps={dialogContentProps}
-        modalProps={{ isBlocking: true }}
+        // modalProps={{ isBlocking: true }}
       >
         <DialogContent>
           <TextField
@@ -445,178 +509,236 @@ const Form: React.FC = () => {
             }
             label="Reason of Rejection"
             multiline
-            /* rows={12} */ name="reasonOfRejection"
+            name="reasonOfRejection"
           />
         </DialogContent>
         <DialogFooter>
           <PrimaryButton
-            onClick={handleReject}
-            disabled={!rejectReason}
-            text="Reject Form"
+            onClick={() => rejectMutation.mutate()}
+            disabled={!rejectReason || rejectMutation.isLoading}
+            text={rejectMutation.isLoading ? "Rejecting…" : "Reject Form"}
           />
           <DefaultButton onClick={toggleHideDialog} text="Cancel" />
         </DialogFooter>
       </Dialog>
 
-      {loading ? (
-        <p>Working...</p>
-      ) : (
-        <form action="" onSubmit={handleSubmit}>
-          <h4>
-            Status: <u>{statusMsg}</u>
-          </h4>
-          <Stack horizontal tokens={stackTokens} horizontalAlign="stretch">
-            <ComboBox
-              disabled={isFormDisabled}
-              selectedKey={formDetails.location}
-              onChange={(_, opt) => {
-                const name = "location";
-                const value = opt?.text || "";
-                setFormDetails((prevDetails) => ({
-                  ...prevDetails,
-                  [name]: value,
-                }));
-              }}
-              label="Location"
-              options={options}
-            />
-            <ComboBox
-              disabled={isFormDisabled}
-              selectedKey={formDetails.plantCode}
-              onChange={(_, opt) => {
-                const name = "plantCode";
-                const value = opt?.text || "";
-                setFormDetails((prevDetails) => ({
-                  ...prevDetails,
-                  [name]: value,
-                }));
-              }}
-              label="Plant Code & Name"
-              options={optionsPl}
-            />
-            <DatePicker
-              disabled={isFormDisabled}
-              label="Start date"
-              ariaLabel="Select a date. Input format is dd/mm/yyyy."
-              allowTextInput // used just for good UI to render as input element
-              value={
-                formDetails.startDate
-                  ? new Date(formDetails.startDate)
-                  : undefined
+      {/* Main Form */}
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          // Trigger create/update mutation
+          createOrUpdateMutation.mutate({
+            location: formDetails.location,
+            plantCode: formDetails.plantCode,
+            startDate: formDetails.startDate,
+            remarks: formDetails.remarks,
+          });
+        }}
+      >
+        {/* Status message based on currStep */}
+        <h4>
+          Status:{" "}
+          <u>
+            {(() => {
+              switch (currStep) {
+                case 1:
+                  return "GM User Approval Stage";
+                case 2:
+                  return "PP Dept Approval Stage";
+                case 3:
+                  return "QC Dept Approval Stage";
+                case -1:
+                  return "Create New Request";
+                case 0:
+                  return "Update the Request";
+                default:
+                  return "Approved";
               }
-              onSelectDate={(date) => {
-                if (date) {
-                  setFormDetails((p) => ({
-                    ...p,
-                    startDate: date.toISOString(),
-                  }));
-                }
-              }}
-              formatDate={onFormatDate}
-              // minDate={new Date()}
-              className={datePickerStyles.control}
-              // DatePicker uses English strings by default. For localized apps, you must override this prop.
-              strings={defaultDatePickerStrings}
-            />
-          </Stack>
-          <>
-            {/* <TextField
-              value={formDetails.materialCodes}
-              onChange={handleChange}
-              label="Material Codes (Max: 12)"
-              name="materialCodes"
-              multiline
-              rows={12}
-              resizable={false}
-            /> */}
-          </>
-          <TextField
+            })()}
+          </u>
+        </h4>
+
+        <Stack horizontal tokens={stackTokens} horizontalAlign="stretch">
+          {/* Location Dropdown */}
+          <ComboBox
             disabled={isFormDisabled}
-            value={formDetails.remarks}
-            onChange={handleChange}
-            label="Remarks"
-            multiline
-            /* rows={12} */ name="remarks"
+            selectedKey={formDetails.location}
+            onChange={(_, opt) => {
+              const value = opt?.text || "";
+              setFormDetails((prev) => ({ ...prev, location: value }));
+            }}
+            label="Location"
+            options={locationOptions}
           />
 
-          {isFormDisabled ? (
-            <>
-              {extras}
+          {/* Plant Code Dropdown */}
+          <ComboBox
+            disabled={isFormDisabled}
+            selectedKey={formDetails.plantCode}
+            onChange={(_, opt) => {
+              const value = opt?.text || "";
+              setFormDetails((prev) => ({ ...prev, plantCode: value }));
+            }}
+            label="Plant Code & Name"
+            options={plantOptions}
+          />
 
+          {/* Start Date Picker */}
+          <DatePicker
+            disabled={isFormDisabled}
+            label="Start date"
+            ariaLabel="Select a date. Input format is dd/mm/yyyy."
+            allowTextInput // makes it render as an input for better UX
+            value={
+              formDetails.startDate
+                ? new Date(formDetails.startDate)
+                : undefined
+            }
+            onSelectDate={(date) => {
+              if (date) {
+                setFormDetails((p) => ({
+                  ...p,
+                  startDate: date.toISOString(),
+                }));
+              }
+            }}
+            formatDate={onFormatDate}
+            className={datePickerStyles.control}
+            strings={defaultDatePickerStrings}
+          />
+        </Stack>
+
+        {/* Remarks TextField */}
+        <TextField
+          disabled={isFormDisabled}
+          value={formDetails.remarks}
+          onChange={(e: any) => {
+            const { name, value } = e.target;
+            setFormDetails((prev) => ({ ...prev, [name]: value }));
+          }}
+          label="Remarks"
+          multiline
+          name="remarks"
+        />
+
+        {isFormDisabled ? (
+          <>
+            {/* Show checkboxes for PP / QC comments if we’re in those stages */}
+            {currStep === 2 || currStep === 3 ? (
               <div
                 style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "flex-start",
                   marginTop: "16px",
+                  marginBottom: "16px",
+                  paddingBottom: "16px",
+                  borderBottom: "1px solid black",
                 }}
               >
-                <div>
-                  {currStep > 1 ? (
-                    <>
-                      <span>Approved By:</span>
-                      <ol>
-                        {currStep > 1 && <li>GM User</li>}
-                        {currStep > 2 && <li>PP Department</li>}
-                        {currStep > 3 && <li>QC Department</li>}
-                      </ol>
-                    </>
-                  ) : null}
-                </div>
-
-                <Stack
-                  horizontal
-                  tokens={{ childrenGap: 8 }}
-                  // style={{ marginTop: "12px", float: "right" }}
-                >
-                  <DefaultButton
-                    type="button"
-                    text="Reject"
-                    onClick={toggleHideDialog}
-                  />
-                  <PrimaryButton
-                    type="button"
-                    text="Approve"
-                    onClick={handleApprove}
-                  />
-                </Stack>
+                {(currStep === 2 ? ppComments : qcComments).map((text, idx) => (
+                  <div key={idx}>
+                    <input
+                      type="checkbox"
+                      checked={commentsChecked[idx] || false}
+                      id={idx.toString()}
+                      onChange={(e) =>
+                        setCommentsChecked((old) => ({
+                          ...old,
+                          [idx]: e.target.checked,
+                        }))
+                      }
+                    />
+                    <label htmlFor={idx.toString()}>{text}</label>
+                  </div>
+                ))}
               </div>
-            </>
-          ) : (
-            <>
-              <PrimaryButton
-                text={
-                  loading
-                    ? updateMode
-                      ? "Updating..."
-                      : "Submitting..."
-                    : updateMode
-                    ? "Update"
-                    : "Submit"
-                }
-                disabled={disableSubmit}
-                type="submit"
-                style={{ marginTop: "12px", float: "right" }}
-              />
-              {updateMode && (
+            ) : null}
+
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "flex-start",
+                marginTop: "16px",
+              }}
+            >
+              {/* Approved By List */}
+              <div>
+                {currStep > 1 ? (
+                  <>
+                    <span>Approved By:</span>
+                    <ol>
+                      {currStep > 1 && <li>GM User</li>}
+                      {currStep > 2 && <li>PP Department</li>}
+                      {currStep > 3 && <li>QC Department</li>}
+                    </ol>
+                  </>
+                ) : null}
+              </div>
+
+              {/* Approve / Reject Buttons */}
+              <Stack horizontal tokens={{ childrenGap: 8 }}>
                 <DefaultButton
-                  text={loading ? "Deleting..." : "Delete"}
-                  disabled={loading}
                   type="button"
-                  onClick={handleDelete}
-                  style={{
-                    marginTop: "12px",
-                    marginRight: "8px",
-                    float: "right",
-                  }}
+                  text="Reject"
+                  onClick={toggleHideDialog}
+                  disabled={
+                    approveMutation.isLoading || rejectMutation.isLoading
+                  }
                 />
-              )}
-            </>
-          )}
-        </form>
-      )}
+                <PrimaryButton
+                  type="button"
+                  text={approveMutation.isLoading ? "Approving…" : "Approve"}
+                  onClick={() => approveMutation.mutate()}
+                  disabled={
+                    approveMutation.isLoading || rejectMutation.isLoading
+                  }
+                />
+              </Stack>
+            </div>
+          </>
+        ) : (
+          <>
+            {/* Submit / Update Buttons */}
+            <PrimaryButton
+              text={
+                createOrUpdateMutation.isLoading
+                  ? updateMode
+                    ? "Updating…"
+                    : "Submitting…"
+                  : updateMode
+                  ? "Update"
+                  : "Submit"
+              }
+              disabled={disableSubmit}
+              type="submit"
+              style={{ marginTop: "12px", float: "right" }}
+            />
+            {/* If in update mode (currStep=0), also show Delete button */}
+            {updateMode && (
+              <DefaultButton
+                text={deleteMutation.isLoading ? "Deleting…" : "Delete"}
+                disabled={deleteMutation.isLoading}
+                type="button"
+                onClick={() => deleteMutation.mutate()}
+                style={{
+                  marginTop: "12px",
+                  marginRight: "8px",
+                  float: "right",
+                }}
+              />
+            )}
+          </>
+        )}
+      </form>
     </div>
   );
 };
 
-export default Form;
+export default Form; /* function FormWithQueryProvider() {
+  // Ensure you wrap your app (or at least this component tree) in a React Query Client
+  const queryClient = new QueryClient();
+  return (
+    <QueryClientProvider client={queryClient}>
+      <Form />
+    </QueryClientProvider>
+  );
+} */

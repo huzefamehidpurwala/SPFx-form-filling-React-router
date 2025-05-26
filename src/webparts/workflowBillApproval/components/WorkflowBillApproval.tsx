@@ -14,6 +14,7 @@ import { ContextStore } from "./Context/ContextStore";
 import Form from "./Forms/Form";
 import FormsList from "./Forms/FormsList";
 import { PrimaryButton } from "@fluentui/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 // Define props and state interfaces for the ErrorBoundary
 interface ErrorBoundaryProps {
@@ -143,34 +144,42 @@ const SuccessPage: React.FC = () => {
   );
 };
 
+// Create a client
+const queryClient = new QueryClient();
+
 export default class WorkflowBillApproval extends React.Component<IWorkflowBillApprovalProps> {
   public render(): React.ReactElement<IWorkflowBillApprovalProps> {
     const { hasTeamsContext, context } = this.props;
 
     return (
-      <ContextStore.Provider value={{ spContext: context }}>
-        <section
-          className={`${styles.workflowBillApproval} ${
-            hasTeamsContext ? styles.teams : ""
-          }`}
-        >
-          <HashRouter>
-            <ErrorBoundary>
-              <Routes>
-                <Route path="/form/:formId?" element={<Form />} />
-                <Route path="/forms" element={<FormsList />} />
-                <Route path="/err/:code" element={<ErrorPage />} />
-                <Route path="/succ/:status" element={<SuccessPage />} />
-                <Route path="/" element={<Navigate to={"/forms"} replace />} />
-                <Route
-                  path="*"
-                  element={<Navigate to={"/err/404"} replace />}
-                />
-              </Routes>
-            </ErrorBoundary>
-          </HashRouter>
-        </section>
-      </ContextStore.Provider>
+      <QueryClientProvider client={queryClient}>
+        <ContextStore.Provider value={{ spContext: context }}>
+          <section
+            className={`${styles.workflowBillApproval} ${
+              hasTeamsContext ? styles.teams : ""
+            }`}
+          >
+            <HashRouter>
+              <ErrorBoundary>
+                <Routes>
+                  <Route path="/form/:formId?" element={<Form />} />
+                  <Route path="/forms" element={<FormsList />} />
+                  <Route path="/err/:code" element={<ErrorPage />} />
+                  <Route path="/succ/:status" element={<SuccessPage />} />
+                  <Route
+                    path="/"
+                    element={<Navigate to={"/forms"} replace />}
+                  />
+                  <Route
+                    path="*"
+                    element={<Navigate to={"/err/404"} replace />}
+                  />
+                </Routes>
+              </ErrorBoundary>
+            </HashRouter>
+          </section>
+        </ContextStore.Provider>
+      </QueryClientProvider>
     );
   }
 }
