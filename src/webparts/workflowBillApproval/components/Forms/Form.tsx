@@ -767,7 +767,10 @@ const Form: React.FC = () => {
                           GM User
                           {currStep === 2 ? (
                             <>
-                              : <u>{itemEditedByName}</u>
+                              :{" "}
+                              <strong style={{ textDecoration: "underline" }}>
+                                {itemEditedByName}
+                              </strong>
                             </>
                           ) : null}
                         </li>
@@ -777,7 +780,10 @@ const Form: React.FC = () => {
                           PP Department
                           {currStep === 3 ? (
                             <>
-                              : <u>{itemEditedByName}</u>
+                              :{" "}
+                              <strong style={{ textDecoration: "underline" }}>
+                                {itemEditedByName}
+                              </strong>
                             </>
                           ) : null}
                         </li>
