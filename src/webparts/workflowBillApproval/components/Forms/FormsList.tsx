@@ -167,51 +167,41 @@ const fetchFormList = async (
     { Title: string }[]
   ];
 
-  let currUserGrpNum = 0;
+  // as one user can be in multiple groups
+  const currUserGrpNum: number[] = [];
   let currUserGmLocation = "";
   userGroups.forEach((grp) => {
     if (grp.Title === "GM QC") {
-      currUserGrpNum = 3;
+      currUserGrpNum.push(3);
     } else if (grp.Title === "PP Department") {
-      currUserGrpNum = 2;
+      currUserGrpNum.push(2);
     } else if (grp.Title.toLowerCase().includes("gm")) {
-      currUserGrpNum = 1;
-      currUserGmLocation = grp.Title.toLowerCase().replace("gm ", "");
+      currUserGrpNum.push(1);
+      currUserGmLocation = grp.Title.toLowerCase().replace("gm ", "").trim();
     }
   });
 
   return itemList.map((item) => {
-    const rCurrStep = item.currStep as number;
-    const autherEMail = (item as any).Author.EMail as string;
+    const { Id, location, currStep } = item;
+    const authorEmail = (item as any).Author?.EMail?.toLowerCase() || "";
+    const step = currStep as number;
 
-    let isAuthorized = false;
-    switch (rCurrStep) {
-      case 1:
-        isAuthorized =
-          currUserGrpNum === 1 &&
-          currUserGmLocation === item.location.toLowerCase();
-        break;
+    const isGroupMatch = currUserGrpNum.includes(step);
+    const isGmLocationMatch =
+      step === 1 &&
+      isGroupMatch &&
+      currUserGmLocation === location.toLowerCase();
 
-      case 2:
-        isAuthorized = rCurrStep === currUserGrpNum;
-        break;
-
-      case 3:
-        isAuthorized = rCurrStep === currUserGrpNum;
-        break;
-
-      case 0:
-        isAuthorized =
-          autherEMail.toLowerCase() === currUserEmail.toLowerCase();
-        break;
-
-      default:
-        break;
-    }
+    const isAuthorized =
+      step === 0
+        ? authorEmail === currUserEmail.toLowerCase()
+        : step === 1
+        ? isGmLocationMatch
+        : isGroupMatch;
 
     return {
       ...item,
-      key: item.Id,
+      key: Id,
       isAuthorized: Number(isAuthorized),
     };
   });
