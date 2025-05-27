@@ -768,7 +768,12 @@ const Form: React.FC = () => {
                           {currStep === 2 ? (
                             <>
                               :{" "}
-                              <strong style={{ textDecoration: "underline" }}>
+                              <strong
+                                style={{
+                                  textDecoration: "underline",
+                                  textUnderlineOffset: "2px",
+                                }}
+                              >
                                 {itemEditedByName}
                               </strong>
                             </>
@@ -781,7 +786,12 @@ const Form: React.FC = () => {
                           {currStep === 3 ? (
                             <>
                               :{" "}
-                              <strong style={{ textDecoration: "underline" }}>
+                              <strong
+                                style={{
+                                  textDecoration: "underline",
+                                  textUnderlineOffset: "2px",
+                                }}
+                              >
                                 {itemEditedByName}
                               </strong>
                             </>
