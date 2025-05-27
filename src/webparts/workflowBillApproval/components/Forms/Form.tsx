@@ -3,7 +3,7 @@ import {
   Checkbox,
   ComboBox,
   DatePicker,
-  DefaultButton,
+  ActionButton,
   defaultDatePickerStrings,
   Dialog,
   DialogContent,
@@ -17,6 +17,8 @@ import {
   PrimaryButton,
   Stack,
   TextField,
+  Callout,
+  DirectionalHint,
 } from "@fluentui/react";
 import { ItemAddResult, ItemUpdateResult, sp } from "@pnp/sp";
 import { ContextStore } from "../Context/ContextStore";
@@ -94,7 +96,9 @@ const datePickerStyles = mergeStyleSets({
 });
 
 type IFormListItem = Record<keyof IFormDetails, string | undefined> &
-  Record<"Author" | "Editor", { EMail: string; Title: string }>;
+  Record<"Author" | "Editor", { EMail: string; Title: string }> & {
+    reasonOfRejection?: string;
+  };
 interface IFormItemFuncResult {
   listItem: IFormListItem;
   currStep: number;
@@ -129,6 +133,7 @@ async function fetchFormItem(
       "materialCodes",
       "billParameters",
       "bomRequest",
+      "reasonOfRejection",
       "Id"
     )
     .get();
@@ -416,6 +421,11 @@ const Form: React.FC = () => {
   >({});
   const [rejectReason, setRejectReason] = React.useState("");
   const [itemEditedByName, setItemEditedByName] = React.useState("");
+  const [showCallout, setShowCallout] = React.useState(false);
+  const toggleShowCallout = React.useCallback(
+    () => setShowCallout((o) => !o),
+    [setShowCallout]
+  );
 
   // Dialog state for rejection modal
   const [hideDialog, setHideDialog] = React.useState(true);
@@ -446,6 +456,7 @@ const Form: React.FC = () => {
         billParameters: JSON.parse(listItem.billParameters || "{}"),
       });
       setItemEditedByName(listItem.Editor.Title || "");
+      setRejectReason(listItem.reasonOfRejection || "");
     }
   }, [fetchedData]);
 
@@ -570,9 +581,26 @@ const Form: React.FC = () => {
             disabled={!rejectReason || rejectMutation.isLoading}
             text={rejectMutation.isLoading ? "Rejecting…" : "Reject Form"}
           />
-          <DefaultButton onClick={toggleHideDialog} text="Cancel" />
+          <ActionButton onClick={toggleHideDialog} text="Cancel" />
         </DialogFooter>
       </Dialog>
+
+      {/* Callout for Reason of Rejection */}
+      {showCallout ? (
+        <Callout
+          role="dialog"
+          style={{ maxWidth: "300px", paddingInline: "16px" }}
+          gapSpace={15}
+          target={`#toggleCalloutButton`}
+          isBeakVisible
+          beakWidth={8}
+          onDismiss={toggleShowCallout}
+          directionalHint={DirectionalHint.topCenter}
+          setInitialFocus
+        >
+          <p>{rejectReason}</p>
+        </Callout>
+      ) : null}
 
       {/* Main Form */}
       <form
@@ -582,28 +610,49 @@ const Form: React.FC = () => {
           createOrUpdateMutation.mutate({ ...formDetails });
         }}
       >
-        {/* Status message based on currStep */}
-        <h4>
-          Status:{" "}
-          <u>
-            {(() => {
-              switch (currStep) {
-                case 1:
-                  return "GM User Approval Stage";
-                case 2:
-                  return "PP Dept Approval Stage";
-                case 3:
-                  return "QC Dept Approval Stage";
-                case -1:
-                  return "Create New Request";
-                case 0:
-                  return "Update the Request";
-                default:
-                  return "Approved";
-              }
-            })()}
-          </u>
-        </h4>
+        <div
+          style={{
+            marginBottom: "16px",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+          }}
+        >
+          {/* Status message based on currStep */}
+          <h4>
+            Status:{" "}
+            <u>
+              {(() => {
+                switch (currStep) {
+                  case 1:
+                    return "GM User Approval Stage";
+                  case 2:
+                    return "PP Dept Approval Stage";
+                  case 3:
+                    return "QC Dept Approval Stage";
+                  case -1:
+                    return "Create New Request";
+                  case 0:
+                    return "Update the Request";
+                  default:
+                    return "Approved";
+                }
+              })()}
+            </u>
+          </h4>
+
+          <div style={{ display: "flex", alignItems: "center" }}>
+            {updateMode && !!rejectReason ? (
+              <ActionButton
+                id="toggleCalloutButton"
+                iconProps={{ iconName: "Info" }}
+                text="Reason for Rejection"
+                // style={{ textDecoration: "underline", textUnderlineOffset: "2px" }}
+                onClick={toggleShowCallout}
+              />
+            ) : null}
+          </div>
+        </div>
 
         <Stack horizontal tokens={stackTokens} horizontalAlign="stretch">
           {/* Location Dropdown */}
@@ -825,7 +874,7 @@ const Form: React.FC = () => {
 
               {/* Approve / Reject Buttons */}
               <Stack horizontal tokens={{ childrenGap: 8 }}>
-                <DefaultButton
+                <ActionButton
                   type="button"
                   text="Reject"
                   onClick={toggleHideDialog}
@@ -863,7 +912,7 @@ const Form: React.FC = () => {
             />
             {/* If in update mode (currStep=0), also show Delete button */}
             {updateMode && (
-              <DefaultButton
+              <ActionButton
                 text={deleteMutation.isLoading ? "Deleting…" : "Delete"}
                 disabled={deleteMutation.isLoading}
                 type="button"
