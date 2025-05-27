@@ -19,6 +19,7 @@ import {
   TextField,
   Callout,
   DirectionalHint,
+  SpinnerSize,
 } from "@fluentui/react";
 import { ItemAddResult, ItemUpdateResult, sp } from "@pnp/sp";
 import { ContextStore } from "../Context/ContextStore";
@@ -435,6 +436,7 @@ const Form: React.FC = () => {
   const {
     data: fetchedData,
     isInitialLoading: isLoading,
+    isFetching,
     isError: fetchError,
     error: fetchErrorObject,
   } = useFormItemQuery(formIdNumber, context);
@@ -641,7 +643,10 @@ const Form: React.FC = () => {
             </u>
           </h4>
 
-          <div style={{ display: "flex", alignItems: "center" }}>
+          <div style={{ display: "flex", alignItems: "center", columnGap: 4 }}>
+            {!isLoading && isFetching && (
+              <Loading label="Updating..." size={SpinnerSize.small} />
+            )}
             {updateMode && !!rejectReason ? (
               <ActionButton
                 id="toggleCalloutButton"
