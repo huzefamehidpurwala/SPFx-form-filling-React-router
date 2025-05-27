@@ -18,10 +18,16 @@ import {
   Stack,
   TextField,
 } from "@fluentui/react";
-import { sp } from "@pnp/sp";
+import { ItemAddResult, ItemUpdateResult, sp } from "@pnp/sp";
 import { ContextStore } from "../Context/ContextStore";
 import { useNavigate, useParams } from "react-router-dom";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+  useQuery,
+  useMutation,
+  useQueryClient,
+  UseQueryResult,
+  UseMutationResult,
+} from "@tanstack/react-query";
 import { WebPartContext } from "@microsoft/sp-webpart-base";
 import Loading from "../../../helper/Loading";
 
@@ -87,6 +93,13 @@ const datePickerStyles = mergeStyleSets({
   control: { maxWidth: 300, marginBottom: 15 },
 });
 
+type IFormListItem = Record<keyof IFormDetails, string | undefined> &
+  Record<"Author" | "Editor", { EMail: string; Title: string }>;
+interface IFormItemFuncResult {
+  listItem: IFormListItem;
+  currStep: number;
+}
+
 /**
  * fetchFormItem
  *
@@ -99,7 +112,7 @@ const datePickerStyles = mergeStyleSets({
 async function fetchFormItem(
   formId: number,
   context: WebPartContext
-): Promise<{ listItem: any; currStep: number }> {
+): Promise<IFormItemFuncResult> {
   // 1) Query the list item by its ID, expanding the "Author" field so we can read the creator’s email.
   const listItemPromise = sp.web.lists
     .getById(listId)
@@ -178,7 +191,10 @@ async function fetchFormItem(
  * @param formId - numeric ID of the item
  * @param context - SP context from React Context
  */
-function useFormItemQuery(formId: number | undefined, context: WebPartContext) {
+function useFormItemQuery(
+  formId: number | undefined,
+  context: WebPartContext
+): UseQueryResult<IFormItemFuncResult> {
   return useQuery(
     ["formItem", formId],
     // queryFn only runs if formId is defined
@@ -206,7 +222,7 @@ function useCreateOrUpdateFormMutation(
   formId: number | undefined,
   context: WebPartContext,
   onSuccess: () => void
-) {
+): UseMutationResult<ItemAddResult | ItemUpdateResult, unknown, IFormDetails> {
   const queryClient = useQueryClient();
 
   return useMutation(
@@ -274,7 +290,7 @@ function useApproveFormMutation(
   currStep: number,
   comments: string,
   onSuccess: () => void
-) {
+): UseMutationResult<ItemUpdateResult, unknown, void> {
   const queryClient = useQueryClient();
 
   return useMutation(
@@ -316,7 +332,7 @@ function useRejectFormMutation(
   rejectReason: string,
   rejectedBy: string,
   onSuccess: () => void
-) {
+): UseMutationResult<ItemUpdateResult, unknown, void> {
   const queryClient = useQueryClient();
 
   return useMutation(
@@ -347,7 +363,10 @@ function useRejectFormMutation(
  * @param formId - ID of item
  * @param onSuccess - callback after delete
  */
-function useDeleteFormMutation(formId: number, onSuccess: () => void) {
+function useDeleteFormMutation(
+  formId: number,
+  onSuccess: () => void
+): UseMutationResult<void, unknown, void> {
   const queryClient = useQueryClient();
 
   return useMutation(
@@ -426,7 +445,7 @@ const Form: React.FC = () => {
         bomRequest: listItem.bomRequest || "",
         billParameters: JSON.parse(listItem.billParameters || "{}"),
       });
-      setItemEditedByName(listItem.Editor?.Title || "");
+      setItemEditedByName(listItem.Editor.Title || "");
     }
   }, [fetchedData]);
 
@@ -692,7 +711,7 @@ const Form: React.FC = () => {
           multiline
           rows={6}
           value={formDetails.materialCodes}
-          onChange={(e: any) => {
+          onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => {
             const { name, value } = e.target;
             setFormDetails((prev) => ({ ...prev, [name]: value }));
           }}
@@ -715,7 +734,7 @@ const Form: React.FC = () => {
           <TextField
             disabled={isFormDisabled}
             value={formDetails.remarks}
-            onChange={(e: any) => {
+            onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => {
               const { name, value } = e.target;
               setFormDetails((prev) => ({ ...prev, [name]: value }));
             }}
